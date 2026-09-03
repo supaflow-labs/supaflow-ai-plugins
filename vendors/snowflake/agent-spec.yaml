@@ -1,0 +1,3 @@
+mcp_servers:
+  - server_spec:
+      name: "<database>.<schema>.<supaflow_mcp_server>"

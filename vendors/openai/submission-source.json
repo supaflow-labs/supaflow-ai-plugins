@@ -1,0 +1,20 @@
+{
+  "displayName": "Supaflow",
+  "developerName": "Supaflow Labs",
+  "shortDescription": "Build, run, and monitor data pipelines",
+  "description": "Build and operate production data pipelines from chat using your existing Supaflow connections. Choose exactly which objects to move, schedule syncs, monitor jobs, investigate failures, and safely cancel work—all within your existing Supaflow permissions. Set up credentials or connector OAuth in Supaflow before using a new connection here.",
+  "category": "Data & Analytics",
+  "capabilities": ["Interactive", "Read", "Write"],
+  "defaultPrompts": [
+    "Create a Salesforce-to-Snowflake pipeline and sync Accounts and Opportunities",
+    "Show me which pipelines failed recently and why",
+    "Run my customer pipeline and monitor it to completion"
+  ],
+  "logo": "../../plugins/supaflow/assets/logo.png",
+  "website": "https://www.supa-flow.io",
+  "privacyPolicy": "https://www.supa-flow.io/legal/privacy-policy",
+  "termsOfService": "https://www.supa-flow.io/legal/terms-of-use",
+  "mcpEndpoint": "https://app.supa-flow.io/mcp",
+  "authentication": "oauth2.1",
+  "access": "control_plane"
+}

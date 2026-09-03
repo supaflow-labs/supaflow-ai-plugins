@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "supaflow": {
+      "type": "http",
+      "url": "https://app.supa-flow.io/mcp",
+      "oauth": {
+        "clientId": "Rx00poctUvOSSG3L",
+        "callbackUrl": "http://127.0.0.1:8765/callback/BurW79bZPaVW",
+        "callbackPort": 8765
+      }
+    }
+  }
+}

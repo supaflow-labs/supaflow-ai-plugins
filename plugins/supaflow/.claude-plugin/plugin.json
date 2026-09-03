@@ -1,0 +1,21 @@
+{
+  "name": "supaflow",
+  "version": "0.2.0",
+  "description": "Build, run, monitor, and troubleshoot data pipelines with Supaflow.",
+  "author": {
+    "name": "Supaflow Labs",
+    "email": "support@supa-flow.io",
+    "url": "https://www.supa-flow.io"
+  },
+  "homepage": "https://www.supa-flow.io/docs",
+  "repository": "https://github.com/supaflow-labs/supaflow-ai-plugins",
+  "license": "MIT",
+  "keywords": [
+    "supaflow",
+    "data-pipelines",
+    "data-integration",
+    "etl",
+    "elt",
+    "job-monitoring"
+  ]
+}
