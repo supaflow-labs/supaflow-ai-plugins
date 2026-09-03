@@ -44,10 +44,15 @@ Then validate the Codex plugin package with the current OpenAI plugin validator 
 
 ## Install in Codex
 
-The repository is a Codex marketplace with one installable plugin. After the
-repository is published, add its Git URL as a marketplace and install
-`supaflow@supaflow`. The package starts the production OAuth 2.1 authorization
-flow during installation and connects to `https://app.supa-flow.io/mcp`.
+The repository is a Codex marketplace with one installable plugin:
+
+```bash
+codex plugin marketplace add https://github.com/supaflow-labs/supaflow-ai-plugins.git
+codex plugin add supaflow@supaflow
+```
+
+The package starts the production OAuth 2.1 authorization flow during
+installation and connects to `https://app.supa-flow.io/mcp`.
 
 The packaged OAuth client is public and uses PKCE. Its client ID, exact
 resource, server-specific loopback callback, and callback listener port are
