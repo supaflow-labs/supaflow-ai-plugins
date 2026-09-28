@@ -1,14 +1,14 @@
 {
-  "displayName": "Supaflow",
-  "developerName": "Supaflow Labs",
-  "shortDescription": "Build, run, and monitor data pipelines",
-  "description": "Build and operate production data pipelines from chat using your existing Supaflow connections. Choose exactly which objects to move, schedule syncs, monitor jobs, investigate failures, and safely cancel work—all within your existing Supaflow permissions. Set up credentials or connector OAuth in Supaflow before using a new connection here.",
+  "displayName": "Supaflow Data Agent",
+  "developerName": "Supaflow, LLC",
+  "shortDescription": "Run ETL pipelines & dbt models",
+  "description": "Build and run data pipelines directly in ChatGPT. Move data across SaaS apps, databases, data warehouses, and data lakes. Transform data using dbt Core™ models and sync data to your business apps with reverse ETL. Orchestrate pipelines, manage schedules, and troubleshoot issues—all through conversation.",
   "category": "Data & Analytics",
   "capabilities": ["Interactive", "Read", "Write"],
   "defaultPrompts": [
-    "Create a Salesforce-to-Snowflake pipeline and sync Accounts and Opportunities",
-    "Show me which pipelines failed recently and why",
-    "Run my customer pipeline and monitor it to completion"
+    "Plan a Salesforce-to-Snowflake pipeline for Accounts and Opportunities, then ask me before creating it",
+    "Show me which pipelines failed in the last 24 hours, explain why, and recommend the next action",
+    "Run my HubSpot-to-Snowflake pipeline, monitor the job to completion, and summarize the outcome"
   ],
   "logo": "../../plugins/supaflow/assets/logo.png",
   "website": "https://www.supa-flow.io",

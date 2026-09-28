@@ -131,7 +131,11 @@ def main() -> None:
         raise ValueError("Codex marketplace descriptor is out of sync")
 
     interface = codex.get("interface", {})
+    if codex.get("author", {}).get("name") != interface.get("developerName"):
+        raise ValueError("Codex author name must match the OpenAI developer name")
     presentation_pairs = {
+        "displayName": "displayName",
+        "developerName": "developerName",
         "shortDescription": "shortDescription",
         "description": "longDescription",
         "category": "category",
@@ -146,6 +150,51 @@ def main() -> None:
             raise ValueError(
                 f"OpenAI {submission_field} is out of sync with Codex {manifest_field}"
             )
+
+    display_name = interface.get("displayName")
+    short_description = interface.get("shortDescription")
+    long_description = interface.get("longDescription")
+    default_prompts = interface.get("defaultPrompt")
+    if (
+        not isinstance(display_name, str)
+        or not display_name
+        or len(display_name) > 30
+        or "\n" in display_name
+    ):
+        raise ValueError(
+            "OpenAI displayName must be a non-empty single line of at most 30 characters"
+        )
+    if (
+        not isinstance(short_description, str)
+        or not short_description
+        or len(short_description) > 30
+        or "\n" in short_description
+    ):
+        raise ValueError(
+            "OpenAI shortDescription must be a non-empty single line of at most 30 characters"
+        )
+    if (
+        not isinstance(long_description, str)
+        or not long_description
+        or len(long_description) > 4000
+    ):
+        raise ValueError("OpenAI longDescription must contain at most 4,000 characters")
+    if (
+        not isinstance(default_prompts, list)
+        or not 1 <= len(default_prompts) <= 3
+    ):
+        raise ValueError("OpenAI defaultPrompt must contain between one and three prompts")
+    if any(
+        not isinstance(prompt, str)
+        or not prompt
+        or len(prompt) > 128
+        or "\n" in prompt
+        or "@" in prompt
+        for prompt in default_prompts
+    ):
+        raise ValueError(
+            "Each OpenAI starter prompt must be a non-empty single line of at most 128 characters without @mentions"
+        )
     if openai.get("logo") != "../../plugins/supaflow/assets/logo.png":
         raise ValueError("OpenAI logo source must reference the packaged Supaflow logo")
 
