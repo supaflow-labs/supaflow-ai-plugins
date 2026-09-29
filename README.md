@@ -6,7 +6,7 @@ The repository publishes one provider-neutral Supaflow package and keeps vendor-
 
 | Target                  | Packaging                                                                 |
 | ----------------------- | ------------------------------------------------------------------------- |
-| ChatGPT / Codex         | `.codex-plugin/plugin.json`, shared skill, and the production MCP URL     |
+| ChatGPT / Codex         | `.codex-plugin/plugin.json`, registered OpenAI app binding, and shared skill |
 | Claude                  | `.claude-plugin/plugin.json`, shared skill, and `.mcp.json`               |
 | Snowflake Cortex Agents | Experimental design notes; OAuth resource forwarding is not yet validated |
 
@@ -51,12 +51,14 @@ codex plugin marketplace add https://github.com/supaflow-labs/supaflow-ai-plugin
 codex plugin add supaflow@supaflow
 ```
 
-The package starts the production OAuth 2.1 authorization flow during
-installation and connects to `https://app.supa-flow.io/mcp`.
+The package binds to the registered Supaflow OpenAI app. Its marketplace policy
+requests authentication on install, so users connect Supaflow from the plugin
+experience instead of configuring a separate raw MCP server. The registered app
+connects to `https://app.supa-flow.io/mcp` with OAuth 2.1 and PKCE.
 
-The packaged OAuth client is public and uses PKCE. Its client ID, exact
-resource, server-specific loopback callback, and callback listener port are
-part of the plugin configuration; no client secret is distributed.
+The checked-in OpenAI package contains no loopback callback, OAuth client
+secret, access token, or refresh token. Loopback callbacks are reserved for the
+separate local end-to-end harness.
 
 ## Release status
 

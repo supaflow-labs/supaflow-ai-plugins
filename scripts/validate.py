@@ -10,9 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "supaflow"
 EXPECTED_MCP_URL = "https://app.supa-flow.io/mcp"
-EXPECTED_OAUTH_CLIENT_ID = "Rx00poctUvOSSG3L"
-EXPECTED_OAUTH_CALLBACK_URL = "http://127.0.0.1:8765/callback/BurW79bZPaVW"
-EXPECTED_OAUTH_CALLBACK_PORT = 8765
+EXPECTED_OPENAI_APP_ID = "asdk_app_6abadf90c69881919b46c92f36bcfc99"
 EXPECTED_TOOLS = [
     "auth_status",
     "workspaces_list",
@@ -82,6 +80,7 @@ def read_json(path: Path) -> dict:
 def main() -> None:
     codex = read_json(PLUGIN / ".codex-plugin" / "plugin.json")
     claude = read_json(PLUGIN / ".claude-plugin" / "plugin.json")
+    app = read_json(PLUGIN / ".app.json")
     mcp = read_json(PLUGIN / ".mcp.json")
     contract = read_json(ROOT / "contracts" / "hosted-tools.json")
     openai = read_json(ROOT / "vendors" / "openai" / "submission-source.json")
@@ -92,19 +91,24 @@ def main() -> None:
     if codex.get("version") != claude.get("version"):
         raise ValueError("Codex and Claude plugin versions must match")
 
-    server = mcp.get("mcpServers", {}).get("supaflow", {})
-    expected_server = {
-        "type": "http",
-        "url": EXPECTED_MCP_URL,
-        "oauth": {
-            "clientId": EXPECTED_OAUTH_CLIENT_ID,
-            "callbackUrl": EXPECTED_OAUTH_CALLBACK_URL,
-            "callbackPort": EXPECTED_OAUTH_CALLBACK_PORT,
-        },
+    expected_app = {
+        "apps": {
+            "supaflow": {
+                "id": EXPECTED_OPENAI_APP_ID,
+                "required": True,
+            }
+        }
     }
+    if codex.get("apps") != "./.app.json" or app != expected_app:
+        raise ValueError("Codex must bind to the reviewed OpenAI Supaflow app")
+    if codex.get("mcpServers") is not None:
+        raise ValueError("Codex must not install Supaflow as a duplicate raw MCP server")
+
+    server = mcp.get("mcpServers", {}).get("supaflow", {})
+    expected_server = {"type": "http", "url": EXPECTED_MCP_URL}
     if server != expected_server:
         raise ValueError(
-            "The shared MCP config must contain the hosted endpoint and reviewed public PKCE client"
+            "The Claude MCP config must contain only the hosted endpoint and rely on OAuth discovery"
         )
     if openai.get("mcpEndpoint") != EXPECTED_MCP_URL:
         raise ValueError("OpenAI submission metadata MCP URL is out of sync")

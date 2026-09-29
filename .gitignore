@@ -5,3 +5,7 @@
 !.env.example
 dist/
 .local-marketplace/
+vendors/openai/demo/node_modules/
+vendors/openai/demo/chatgpt-demo-profile/
+vendors/openai/demo/videos/
+vendors/openai/demo/artifacts/

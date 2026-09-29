@@ -24,7 +24,7 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Supaflow Data Agent",
+    "displayName": "Supaflow",
     "shortDescription": "Run ETL pipelines & dbt models",
     "longDescription": "Build and run data pipelines directly in ChatGPT. Move data across SaaS apps, databases, data warehouses, and data lakes. Transform data using dbt Core™ models and sync data to your business apps with reverse ETL. Orchestrate pipelines, manage schedules, and troubleshoot issues—all through conversation.",
     "developerName": "Supaflow, LLC",
@@ -41,5 +41,5 @@
     "brandColor": "#312E81",
     "logo": "./assets/logo.png"
   },
-  "mcpServers": "./.mcp.json"
+  "apps": "./.app.json"
 }

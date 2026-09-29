@@ -16,10 +16,11 @@ Before submission:
 6. Run the direct, indirect, invalid-input, cross-tenant, and out-of-scope evaluation set.
 7. Complete domain and publisher verification in the portal.
 
-For the installable Codex package, also verify that `.mcp.json` contains the
-reviewed public PKCE client ID and the exact server-specific loopback callback.
-The matching callback must remain registered in Clerk. Never package the Clerk
-client secret.
+For the installable ChatGPT/Codex marketplace package, verify that `.app.json`
+binds to the reviewed Supaflow OpenAI app and that the Codex manifest declares
+that app instead of a duplicate raw MCP server. The registered OpenAI app owns
+the production MCP URL and OAuth callback. Never package a loopback callback,
+Clerk client secret, access token, or refresh token.
 
 The hosted plugin does not include or invoke the local Supaflow agent commands.
 OpenAI clients should honor typed retry hints only for bounded read/status
@@ -33,22 +34,29 @@ whose configuration can be copied. Otherwise, users complete credential setup
 in the Supaflow UI. Never ask users to put plaintext datasource credentials in
 chat or MCP input.
 
+## Review demo recording
+
+Use the Playwright harness in [`demo/`](demo/README.md) to prepare the persistent
+ChatGPT browser profile, probe whether Supaflow OAuth uses the same page or a
+popup, and record the reviewer workflow. Enable Developer mode in that
+persistent profile before recording. Supaflow sign-in must follow **Use another
+method** → **Sign in with your password** so the dedicated review account does
+not wait for an email OTP.
+
 ## Local OAuth and tool-catalog test
 
 ### Installed production package
 
 Create or refresh an ignored local marketplace copy, install
-`supaflow@personal`, and authorize the remote server from a fresh Codex task.
-Verify at least `workspaces_list` and `jobs_list` before exercising any write.
-The expected redirect is
-`http://127.0.0.1:8765/callback/BurW79bZPaVW`, and the authorization request
-must contain `resource=https://app.supa-flow.io/mcp` plus `offline_access`,
-`user:org:read`, `supaflow:read`, and `supaflow:write`.
+`supaflow@personal`, and connect the required Supaflow app from the plugin page.
+Verify that authentication is offered on the plugin/app row and that no
+duplicate raw Supaflow MCP entry is installed. From a fresh task, verify at
+least `workspaces_list` and `jobs_list` before exercising any write. The
+authorization request must contain `resource=https://app.supa-flow.io/mcp`
+plus `offline_access`, `user:org:read`, `supaflow:read`, and `supaflow:write`.
 
-If a Codex runtime reports that plugin `callbackPort` is ignored, set its global
-MCP OAuth callback listener to port `8765` for that compatibility test. Do not
-change the registered callback or package a secret to work around a client-side
-listener regression.
+The loopback OAuth client remains available only to the hosted-server lifecycle
+harness below. It is not part of the installable OpenAI package.
 
 ### Hosted server lifecycle harness
 

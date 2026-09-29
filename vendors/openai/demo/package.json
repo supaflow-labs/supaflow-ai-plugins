@@ -1,0 +1,14 @@
+{
+  "name": "supaflow-openai-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install-video-runtime": "playwright install ffmpeg",
+    "setup-profile": "node record-demo.mjs --setup-profile",
+    "probe-oauth": "node record-demo.mjs --probe-oauth",
+    "record": "node record-demo.mjs --record"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}
