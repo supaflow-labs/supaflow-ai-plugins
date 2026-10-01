@@ -36,7 +36,7 @@
     "defaultPrompt": [
       "Plan a Salesforce-to-Snowflake pipeline for Accounts and Opportunities, then ask me before creating it",
       "Show me which pipelines failed in the last 24 hours, explain why, and recommend the next action",
-      "Run my HubSpot-to-Snowflake pipeline, monitor the job to completion, and summarize the outcome"
+      "Run my Salesforce-to-Snowflake pipeline, monitor the job to completion, and summarize the outcome"
     ],
     "brandColor": "#312E81",
     "logo": "./assets/logo.png"

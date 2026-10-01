@@ -72,14 +72,26 @@ Start from a disconnected Supaflow plugin and run:
 npm run record
 ```
 
-The recording demonstrates:
+The recording demonstrates selecting Supaflow from ChatGPT's plugin page,
+completing OAuth using the password alternative, and running these prompts in
+order:
 
-1. Selecting Supaflow from ChatGPT's plugin page.
-2. Completing Supaflow OAuth using the password alternative.
-3. Listing the configured Salesforce source, Snowflake destination, and
-   Salesforce-to-Snowflake pipeline.
-4. Running the pipeline, monitoring it to completion, and summarizing the
-   Account, Contact, Case, and Opportunity results.
+1. `List the available datasources in my Supaflow workspace. Group them into
+   sources and destinations, and show each datasource's name, connector type,
+   and status.`
+2. `List my Supaflow pipelines. Show each pipeline's name, source, destination,
+   and current state.`
+3. `Show my five most recent Supaflow jobs, newest first. Include the pipeline
+   name, job status, start time, duration, and rows processed.`
+4. `Show me the configuration for my Salesforce-to-Snowflake pipeline,
+   including its source, destination, and selected objects.`
+5. `Run my Salesforce-to-Snowflake pipeline using a normal sync. Monitor the
+   job until it finishes, then summarize its status, duration, rows processed,
+   and any warnings or errors.`
+
+These prompts deliberately request only fields exposed by the current tools.
+For example, the pipeline listing returns its current state, while the pipeline
+configuration does not return a refresh-mode field.
 
 Recordings are finalized when the browser context closes and are written to
 `videos/`. Run metadata, including the detected OAuth page mode and the exact
