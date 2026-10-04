@@ -4,11 +4,56 @@ import test from 'node:test';
 import {
   assertCanonicalProtectedResourceMetadata,
   createMcpClient,
+  listInventoryById,
   McpRetryableError,
   McpTransportError,
   pollCatalogReset,
   pollJob,
 } from './test-hosted-mcp-oauth.mjs';
+
+test('immutable inventory pagination continues through the terminal empty page', async () => {
+  const requests = [];
+  const responses = [
+    [
+      { id: '00000000-0000-0000-0000-000000000001' },
+      { id: '00000000-0000-0000-0000-000000000002' },
+    ],
+    [{ id: '00000000-0000-0000-0000-000000000003' }],
+    [],
+  ];
+  const client = {
+    async callTool(toolName, args) {
+      requests.push({ toolName, args });
+      return { structuredContent: { datasources: responses.shift() } };
+    },
+  };
+
+  const result = await listInventoryById(
+    client,
+    'workspace-test',
+    'datasources_list',
+    'datasources',
+    { limit: 2 },
+  );
+
+  assert.deepEqual(
+    result.items.map((item) => item.id),
+    [
+      '00000000-0000-0000-0000-000000000001',
+      '00000000-0000-0000-0000-000000000002',
+      '00000000-0000-0000-0000-000000000003',
+    ],
+  );
+  assert.equal(result.pages, 3);
+  assert.deepEqual(
+    requests.map(({ args }) => args.after_id),
+    [
+      undefined,
+      '00000000-0000-0000-0000-000000000002',
+      '00000000-0000-0000-0000-000000000003',
+    ],
+  );
+});
 
 test('OAuth metadata must bind tokens to the exact configured MCP endpoint', () => {
   assert.equal(

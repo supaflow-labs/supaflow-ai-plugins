@@ -538,6 +538,90 @@ async function listJobsThroughMcp(client) {
   );
 }
 
+export async function listInventoryById(
+  client,
+  workspaceId,
+  toolName,
+  field,
+  { limit = 200 } = {},
+) {
+  const items = [];
+  const seenIds = new Set();
+  let afterId;
+  let pages = 0;
+  let previousId;
+
+  for (;;) {
+    const result = await client.callTool(
+      toolName,
+      {
+        workspace_id: workspaceId,
+        limit,
+        sort: 'id',
+        ...(afterId ? { after_id: afterId } : {}),
+      },
+      { quiet: true },
+    );
+    const payload = content(result);
+    const page = Array.isArray(payload[field]) ? payload[field] : [];
+    pages += 1;
+
+    if (page.length > limit) {
+      throw new Error(`${toolName} returned more than the requested ${limit} rows`);
+    }
+    for (const item of page) {
+      const id = typeof item?.id === 'string' ? item.id : '';
+      if (!id) throw new Error(`${toolName} returned an item without an id`);
+      if (seenIds.has(id)) throw new Error(`${toolName} repeated id ${id}`);
+      if (previousId && id <= previousId) {
+        throw new Error(`${toolName} returned non-ascending id ${id} after ${previousId}`);
+      }
+      seenIds.add(id);
+      items.push(item);
+      previousId = id;
+    }
+
+    if (page.length === 0) break;
+    afterId = page.at(-1).id;
+  }
+
+  return {
+    items,
+    pages,
+    digest: crypto
+      .createHash('sha256')
+      .update(items.map((item) => item.id).join('\n'))
+      .digest('hex'),
+  };
+}
+
+async function runInventoryPagination(client) {
+  const workspaces = content(await client.callTool('workspaces_list', {})).workspaces || [];
+  if (workspaces.length === 0) throw new Error('No accessible workspace is available');
+  const preferredWorkspace = process.env.SUPAFLOW_E2E_WORKSPACE_ID?.trim();
+  const workspace = workspaces.find((item) => item.id === preferredWorkspace) || workspaces[0];
+
+  const [datasources, pipelines] = await Promise.all([
+    listInventoryById(client, workspace.id, 'datasources_list', 'datasources'),
+    listInventoryById(client, workspace.id, 'pipelines_list', 'pipelines'),
+  ]);
+  console.log(
+    `PASS inventory_id_pagination ${JSON.stringify({
+      workspace_id: workspace.id,
+      datasources: {
+        count: datasources.items.length,
+        pages: datasources.pages,
+        digest: datasources.digest,
+      },
+      pipelines: {
+        count: pipelines.items.length,
+        pages: pipelines.pages,
+        digest: pipelines.digest,
+      },
+    })}`,
+  );
+}
+
 async function runLiveParity(
   client,
   contract,
@@ -1099,6 +1183,7 @@ async function main() {
   const clientId = requiredEnvironment('SUPAFLOW_OAUTH_CLIENT_ID');
   const redirectUri = requiredEnvironment('SUPAFLOW_OAUTH_REDIRECT_URI');
   const listJobsOnly = process.env.SUPAFLOW_LIST_JOBS_ONLY === 'true';
+  const listInventoryOnly = process.env.SUPAFLOW_LIST_INVENTORY_ONLY === 'true';
   const mcpUrl = process.env.SUPAFLOW_MCP_URL?.trim() || DEFAULT_MCP_URL;
   const timeoutMs = Number(process.env.SUPAFLOW_OAUTH_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
   const jobTimeoutMs = Number(
@@ -1137,6 +1222,10 @@ async function main() {
   console.log(`PASS tools/list count=${actualNames.length}`);
   if (listJobsOnly) {
     await listJobsThroughMcp(client);
+    return;
+  }
+  if (listInventoryOnly) {
+    await runInventoryPagination(client);
     return;
   }
 
