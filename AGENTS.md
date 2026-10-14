@@ -5,6 +5,7 @@
 - This repository packages Supaflow for AI clients and marketplaces. The hosted MCP runtime remains in `supaflow-app`; the local stdio MCP runtime remains in `supaflow-cli`.
 - Keep provider-neutral skills and metadata in `plugins/supaflow`. Put provider-specific submission material under `vendors/`.
 - Do not duplicate Supaflow business logic, database access, OAuth token exchange, or MCP tool handlers in this repository.
+- `plugins/supaflow-code` is a self-contained GitHub-installed local Codex package using the existing CLI-backed stdio MCP server. Keep hosted OAuth/app bindings, Claude-specific commands/hooks, automatic setup mutations, and tool preapprovals out of it. Preserve the hosted package and public submission archive as separate surfaces. Run `node --test scripts/test-supaflow-code.test.mjs`, Python package tests, and the repository validator after changes to its manifests, skills, or setup checks.
 
 ## Hosted versus local boundary
 

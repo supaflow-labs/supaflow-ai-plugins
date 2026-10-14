@@ -1,0 +1,34 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "supaflow-code",
+  "version": "0.1.0",
+  "description": "Local Codex workflows for Supaflow pipelines and private agents using the Supaflow CLI and its stdio MCP server. GitHub installation; requires local execution.",
+  "author": {
+    "name": "Supaflow, LLC",
+    "email": "support@supa-flow.io",
+    "url": "https://www.supa-flow.io"
+  },
+  "homepage": "https://www.supa-flow.io",
+  "repository": "https://github.com/supaflow-labs/supaflow-ai-plugins",
+  "license": "MIT",
+  "keywords": ["supaflow", "codex", "cli", "data pipelines", "private agents"],
+  "extensions": {
+    "com.openai": {
+      "requires_local_executor": true,
+      "onboardingSkill": "./skills/using-supaflow-code/SKILL.md",
+      "interface": {
+        "displayName": "Supaflow Code",
+        "shortDescription": "Local CLI & private agents",
+        "longDescription": "Use Supaflow from a local Codex session with your CLI account and selected workspace. Inspect connections, prepare pipelines, monitor jobs, manage schedules, and operate local Docker agents. Not for browser chat or cloud execution. Install the CLI separately; hosted Supaflow OAuth does not authenticate it.",
+        "developerName": "Supaflow, LLC",
+        "category": "Developer Tools",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://www.supa-flow.io",
+        "supportURL": "https://www.supa-flow.io/contact-us",
+        "privacyPolicyURL": "https://www.supa-flow.io/legal/privacy-policy",
+        "termsOfServiceURL": "https://www.supa-flow.io/legal/terms-of-use",
+        "defaultPrompt": "Check my local Supaflow CLI, workspace, and Docker readiness. Ask before making changes."
+      }
+    }
+  }
+}

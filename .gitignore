@@ -4,6 +4,7 @@
 .env.*
 !.env.example
 dist/
+__pycache__/
 .local-marketplace/
 vendors/openai/demo/node_modules/
 vendors/openai/demo/chatgpt-demo-profile/

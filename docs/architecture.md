@@ -17,6 +17,8 @@ Local CLI / local stdio MCP ─> local Docker agent and local filesystem
 - `supaflow-cli` owns local commands and the stdio MCP bridge, including all agent, Docker, filesystem, and process operations.
 - `supaflow-ai-plugins` owns provider-neutral skills, marketplace metadata, packaging manifests, experimental Snowflake design notes, and the reviewed hosted tool contract.
 
+The separate `plugins/supaflow-code` package is a local Codex client of the existing CLI/stdio runtime, not another server implementation. It has no hosted app binding or OAuth client. Its `supaflow-local` server name distinguishes it from the hosted edition. Setup runs explicitly through skill guidance and a read-only helper, without a SessionStart hook. Do not confuse configured CLI credentials with a successful remote authorization check; validate workspace access before operations.
+
 The packaging repository contains no business logic and no credentials. The
 ChatGPT/Codex package binds to the registered Supaflow OpenAI app, while Claude
 discovers OAuth from the hosted MCP endpoint. Supported vendors connect to the

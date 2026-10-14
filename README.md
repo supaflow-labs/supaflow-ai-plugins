@@ -1,16 +1,17 @@
 # Supaflow AI plugins
 
-Cross-vendor packaging for the official Supaflow hosted MCP integration.
+Packaging for hosted Supaflow integrations and local Supaflow Code workflows.
 
-The repository publishes one provider-neutral Supaflow package and keeps vendor-specific submission material separate:
+The repository offers hosted Supaflow and a separate GitHub-installed Supaflow Code package for local Codex. Vendor-specific public submission material stays separate:
 
 | Target                  | Packaging                                                                 |
 | ----------------------- | ------------------------------------------------------------------------- |
 | ChatGPT / Codex         | `.codex-plugin/plugin.json`, registered OpenAI app binding, and shared skill |
+| Local Codex            | `plugins/supaflow-code`: portable manifest, local stdio MCP, local workflow skills and setup checks |
 | Claude                  | `.claude-plugin/plugin.json`, shared skill, and `.mcp.json`               |
 | Snowflake Cortex Agents | Experimental design notes; OAuth resource forwarding is not yet validated |
 
-The supported Codex and Claude targets connect to `https://app.supa-flow.io/mcp`. The hosted server exposes the reviewed Supaflow control plane: workspace and connector discovery, safe datasource management including restoration-aware catalog reset, project and pipeline management, pipeline runs, job monitoring/cancellation, and schedules. Snowflake packaging remains experimental until its OAuth client is proven to forward the exact MCP resource during authorization-code and refresh-token exchanges.
+The hosted Codex and Claude targets connect to `https://app.supa-flow.io/mcp`. Supaflow Code instead launches the installed `supaflow mcp` locally; it does not use that hosted connection. The hosted server exposes the reviewed Supaflow control plane: workspace and connector discovery, safe datasource management including restoration-aware catalog reset, project and pipeline management, pipeline runs, job monitoring/cancellation, and schedules. Snowflake packaging remains experimental until its OAuth client is proven to forward the exact MCP resource during authorization-code and refresh-token exchanges.
 
 The hosted integration operates existing Supaflow connections. Creating a new
 datasource is supported when the user selects an approved connector OAuth flow,
@@ -26,6 +27,7 @@ The Supaflow agent is always local or customer-hosted. This repository does not 
 ## Layout
 
 - `plugins/supaflow`: installable provider-neutral plugin package.
+- `plugins/supaflow-code`: self-contained GitHub-installed local Codex package; see its README for CLI setup and installation.
 - `contracts/hosted-tools.json`: reviewed hosted tool allowlist.
 - `vendors/openai`: OpenAI portal listing source and submission notes.
 - `vendors/claude`: Claude packaging notes.
@@ -38,13 +40,14 @@ Run the repository validator:
 
 ```bash
 python3 scripts/validate.py
+node --test scripts/test-supaflow-code.test.mjs
 ```
 
 Then validate the Codex plugin package with the current OpenAI plugin validator before release.
 
 ## Install in Codex
 
-The repository is a Codex marketplace with one installable plugin:
+The repository is a Codex marketplace with two distinct editions. For hosted Supaflow:
 
 ```bash
 codex plugin marketplace add https://github.com/supaflow-labs/supaflow-ai-plugins.git
@@ -55,6 +58,15 @@ The package binds to the registered Supaflow OpenAI app. Its marketplace policy
 requests authentication on install, so users connect Supaflow from the plugin
 experience instead of configuring a separate raw MCP server. The registered app
 connects to `https://app.supa-flow.io/mcp` with OAuth 2.1 and PKCE.
+
+For local CLI/private-agent workflows, install **Supaflow Code** instead:
+
+```bash
+codex plugin marketplace add https://github.com/supaflow-labs/supaflow-ai-plugins.git
+codex plugin add supaflow-code@supaflow
+```
+
+Use a local Codex session with Node.js 18+, Supaflow CLI 0.5.0+, CLI authentication, and a selected workspace. Docker is needed only for agent operations. Follow [the Code package setup](plugins/supaflow-code/README.md). No Claude-specific hooks, slash commands, or tool preapprovals are carried over. Both editions can coexist, but their accounts and execution contracts are separate. Do not add a duplicate manual `supaflow-local` registration. Code is GitHub-only; do not include it in the hosted public submission ZIP or imply browser/cloud support.
 
 The checked-in OpenAI package contains no loopback callback, OAuth client
 secret, access token, or refresh token. Loopback callbacks are reserved for the

@@ -77,6 +77,33 @@ def read_json(path: Path) -> dict:
     return value
 
 
+def validate_code_package(package: Path) -> None:
+    manifest = read_json(package / "plugin.json")
+    if manifest.get("$schema") != "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json" or manifest.get("name") != "supaflow-code":
+        raise ValueError("Supaflow Code requires its own portable manifest")
+    extension = manifest.get("extensions", {}).get("com.openai", {})
+    if extension.get("requires_local_executor") is not True:
+        raise ValueError("Supaflow Code requires local execution")
+    if any(key in manifest or key in extension for key in ("apps", "hooks", "mcpServers")):
+        raise ValueError("Supaflow Code must not import hosted bindings or host-specific hooks")
+    if any((package / name).exists() for name in (".app.json", "hooks", "commands", ".claude-plugin")):
+        raise ValueError("Supaflow Code must not ship Claude commands, hooks, or hosted app bindings")
+    mcp = read_json(package / "mcp.json")
+    if mcp != {
+        "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+        "mcpServers": {"supaflow-local": {"type": "stdio", "command": "supaflow", "args": ["mcp"]}},
+    }:
+        raise ValueError("Supaflow Code must launch only the existing local CLI MCP server")
+    expected_skills = {"using-supaflow-code", "supaflow-code-agents", "supaflow-code-datasources", "supaflow-code-pipelines", "supaflow-code-jobs", "supaflow-code-schedules"}
+    if {p.parent.name for p in (package / "skills").glob("*/SKILL.md")} != expected_skills:
+        raise ValueError("Supaflow Code workflow inventory is incomplete")
+    if extension.get("onboardingSkill") != "./skills/using-supaflow-code/SKILL.md":
+        raise ValueError("Supaflow Code setup must invoke its local entry skill")
+    for name in ("README.md", "LICENSE", "scripts/check-setup.mjs"):
+        if not (package / name).is_file():
+            raise ValueError(f"Supaflow Code package is missing {name}")
+
+
 def main() -> None:
     codex = read_json(PLUGIN / ".codex-plugin" / "plugin.json")
     claude = read_json(PLUGIN / ".claude-plugin" / "plugin.json")
@@ -128,11 +155,18 @@ def main() -> None:
                     "authentication": "ON_INSTALL",
                 },
                 "category": "Data & Analytics",
-            }
+            },
+            {
+                "name": "supaflow-code",
+                "source": {"source": "local", "path": "./plugins/supaflow-code"},
+                "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
+                "category": "Developer Tools",
+            },
         ],
     }
     if marketplace != expected_marketplace:
         raise ValueError("Codex marketplace descriptor is out of sync")
+    validate_code_package(ROOT / "plugins" / "supaflow-code")
 
     interface = codex.get("interface", {})
     if codex.get("author", {}).get("name") != interface.get("developerName"):
