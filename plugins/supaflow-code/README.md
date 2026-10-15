@@ -4,14 +4,14 @@ GitHub-installed local CLI workflows and CLI-backed stdio MCP. Use the separate 
 
 ## Install
 
-Install Node.js 18+ and the Supaflow CLI 0.5.0+ separately. Dependency installation requires the user's approval. Docker is needed only for local private-agent operations, not ordinary pipeline operations. Python is not required by this package's setup check.
+Install Node.js 18+ and the Supaflow CLI 0.8.0+ separately. Dependency installation requires the user's approval. Docker is needed only for local private-agent operations, not ordinary pipeline operations. Python is not required by this package's setup check.
 
 ```bash
 npm install -g @getsupaflow/cli
 supaflow auth status
 ```
 
-If needed, run `supaflow auth login` in your own terminal. It prompts for an API key created in Supaflow under Settings > API Keys; do not enter it into an AI conversation or a command argument. Then run `supaflow workspaces select` and verify the selected workspace.
+If needed, run `supaflow auth login` in your own terminal. CLI 0.8.0+ opens browser login with PKCE. Review the account, organization, and permissions in the browser. API keys remain optional for headless use through `SUPAFLOW_API_KEY`; never enter credentials into an AI conversation. Existing API-key logins continue to work. Older CLI releases may still prompt for a key; upgrade to CLI 0.8.0 or newer. Then run `supaflow workspaces select` and verify the selected workspace.
 
 ```bash
 codex plugin marketplace add https://github.com/supaflow-labs/supaflow-ai-plugins.git
@@ -22,7 +22,7 @@ Open a fresh **local Codex session** after installation. The client must be able
 
 Ask: “Check my local Supaflow CLI, selected workspace, and Docker readiness. Explain what is needed to deploy a private agent; ask before making changes.”
 
-The entry skill reads the setup gate before operations. There is no SessionStart hook, automatic dependency installation, login, workspace switch, Docker start, or permission preapproval. The optional read-only setup helper is `node scripts/check-setup.mjs` from this package directory; add `--agent` to check Docker client/daemon availability. It does not validate the API key remotely or establish agent-operation permissions.
+The entry skill reads the setup gate before operations. There is no SessionStart hook, automatic dependency installation, login, workspace switch, Docker start, or permission preapproval. The optional read-only setup helper is `node scripts/check-setup.mjs` from this package directory; add `--agent` to check Docker client/daemon availability. It does not validate stored credentials remotely or establish agent-operation permissions.
 
 Local CLI authentication and selected-workspace state are independent of the hosted plugin's OAuth connection. Verify both when switching editions. Missing local tools do not authorize falling back to a hosted tool with the same operation name.
 

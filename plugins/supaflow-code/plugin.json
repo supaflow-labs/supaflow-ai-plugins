@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "supaflow-code",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local Codex workflows for Supaflow pipelines and private agents using the Supaflow CLI and its stdio MCP server. GitHub installation; requires local execution.",
   "author": {
     "name": "Supaflow, LLC",

@@ -9,7 +9,7 @@ Read [entry rules](../using-supaflow-code/SKILL.md) and [setup](../using-supaflo
 
 Use local `agent_status` and narrowly scoped `agent_logs` for diagnostics. Inspect current capability/help before changes, especially `agent_upgrade`: an already-running MCP process may predate the installed CLI. No automatic dependency install, Docker start, CLI upgrade, or service restart.
 
-- Start/resume: explain the target and whether enrollment or resuming existing identity is expected; get confirmation. Use existing identity/container when supported rather than deleting it. Enrollment requires an org-admin API key; stop on authorization errors and have the user resolve permissions securely.
+- Start/resume: explain the target and whether enrollment or resuming existing identity is expected; get confirmation. Use existing identity/container when supported rather than deleting it. Enrollment requires organization-admin access via the CLI’s OAuth login or an API key; stop on authorization errors and have the user resolve permissions securely.
 - Approval: `approve:true`/`--approve` authorizes the agent to receive tenant jobs and changes routing. Use it only when the user explicitly approves activation. Ordinary deployment approval does not imply routing approval; otherwise leave the agent pending.
 - Upgrade: read status, explain the named container/image and interruption, get immediate confirmation, then upgrade. Preserve identity. Use `pull:false`/`--no-pull` only for an explicitly requested local image. Verify status and identity afterward; report failure rather than claiming rollback or success without evidence.
 - Stop: confirm the exact container; stopping preserves identity. Do not stop an unrelated container or daemon.
