@@ -1,13 +1,15 @@
 ---
 name: using-supaflow-code
-description: Use Supaflow in local Codex with the CLI and its stdio MCP server for pipeline operations or private-agent setup and diagnostics. Not for hosted OAuth tools, browser chat, or cloud sessions.
+description: Use Supaflow in local Codex with the CLI and its stdio MCP server for pipeline operations or private-agent setup and diagnostics. Not for hosted MCP tools, browser chat, or cloud sessions.
 ---
 
 # Supaflow Code
 
 Read [the setup gate](setup.md) before local operations. This GitHub-installed edition requires a local Codex executor on the machine with the CLI. In browser chat or cloud execution, use the hosted Supaflow edition instead. Do not install executables into a remote sandbox and claim they manage the user's machine.
 
-Prefer the package's `supaflow-local` stdio MCP tools. Resolve actual host/plugin-prefixed names and inspect schemas; do not hardcode a Claude namespace. Confirm the server uses the CLI selected-workspace contract, not hosted OAuth. If only a hosted server is connected, it cannot supply local agent or filesystem operations. If the local MCP server is unavailable, a local CLI workflow is an alternative only after the setup gate passes; never switch surfaces to repeat an uncertain mutation.
+Browser OAuth with PKCE is the default interactive CLI login; API keys remain optional for headless use. Local MCP shares the CLI login, not the hosted connector grant.
+
+Prefer the package's `supaflow-local` stdio MCP tools. Resolve actual host/plugin-prefixed names and inspect schemas; do not hardcode a Claude namespace. Confirm the server uses the CLI selected-workspace contract, not the hosted MCP workspace contract. If only a hosted server is connected, it cannot supply local agent or filesystem operations. If the local MCP server is unavailable, a local CLI workflow is an alternative only after the setup gate passes; never switch surfaces to repeat an uncertain mutation.
 
 ## Select the workflow
 

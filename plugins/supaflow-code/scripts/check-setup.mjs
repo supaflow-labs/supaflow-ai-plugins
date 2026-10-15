@@ -26,7 +26,7 @@ export function checkSetup({ run = invoke, agent = false } = {}) {
   const nodeReady = node.status === 0 && versionAtLeast(node.stdout || '', [18, 0, 0])
   if (!nodeReady) issues.push('NODE_UNAVAILABLE_OR_UNSUPPORTED')
   const cli = check('supaflow', ['--version'])
-  const cliReady = cli.status === 0 && versionAtLeast(cli.stdout || '', [0, 5, 0])
+  const cliReady = cli.status === 0 && versionAtLeast(cli.stdout || '', [0, 8, 0])
   if (!cliReady) issues.push('CLI_UNAVAILABLE_OR_UNSUPPORTED')
   let credentialsConfigured = false
   let workspaceSelected = false

@@ -13,7 +13,7 @@ function fixture(overrides = {}) {
   const calls = []
   const results = {
     'node --version': { status: 0, stdout: 'v18.0.0\n' },
-    'supaflow --version': { status: 0, stdout: '0.5.0\n' },
+    'supaflow --version': { status: 0, stdout: '0.8.0\n' },
     'supaflow auth status --json': { status: 0, stdout: JSON.stringify(auth) },
     'docker version --format {{.Server.Version}}': { status: 0, stdout: '28.0.0\n' },
     ...overrides,
@@ -47,8 +47,8 @@ test('Node and CLI minimum versions reject missing, old, malformed and prereleas
   for (const [key, bad, code] of [
     ['node --version', 'v17.9.9', 'NODE_UNAVAILABLE_OR_UNSUPPORTED'],
     ['node --version', 'unexpected', 'NODE_UNAVAILABLE_OR_UNSUPPORTED'],
-    ['supaflow --version', '0.4.99', 'CLI_UNAVAILABLE_OR_UNSUPPORTED'],
-    ['supaflow --version', '0.5.0-beta.1', 'CLI_UNAVAILABLE_OR_UNSUPPORTED'],
+    ['supaflow --version', '0.7.99', 'CLI_UNAVAILABLE_OR_UNSUPPORTED'],
+    ['supaflow --version', '0.8.0-beta.1', 'CLI_UNAVAILABLE_OR_UNSUPPORTED'],
   ]) {
     const fake = fixture({ [key]: { status: 0, stdout: bad } })
     const result = checkSetup({ run: fake.run })
@@ -61,7 +61,7 @@ test('Node and CLI minimum versions reject missing, old, malformed and prereleas
 })
 
 test('newer major/minor CLI versions remain accepted', () => {
-  for (const version of ['0.7.0', '1.0.0', '10.2.3']) {
+  for (const version of ['0.8.1', '0.9.0', '1.0.0', '10.2.3']) {
     const fake = fixture({ 'supaflow --version': { status: 0, stdout: version } })
     assert.equal(checkSetup({ run: fake.run }).ready, true)
   }
@@ -154,4 +154,14 @@ test('marketplace includes both editions once without changing hosted app bindin
   ])
   const binding = JSON.parse(readFileSync(new URL('../plugins/supaflow/.app.json', import.meta.url), 'utf8'))
   assert.equal(binding.apps.supaflow.id, 'asdk_app_6abadf90c69881919b46c92f36bcfc99')
+})
+
+test('setup accepts OAuth and API-key status without exposing credentials or launching login', () => {
+  for (const method of ['oauth', 'api_key']) {
+    const fake = fixture({ 'supaflow auth status --json': { status: 0, stdout: JSON.stringify({ ...auth, method, access_token: 'fixture-sensitive-marker', refresh_token: 'fixture-sensitive-marker' }) } })
+    const result = checkSetup({ run: fake.run })
+    assert.equal(result.ready, true)
+    assert.ok(!JSON.stringify(result).includes('fixture-sensitive-marker'))
+    assert.deepEqual(fake.calls, ['node --version', 'supaflow --version', 'supaflow auth status --json'])
+  }
 })
