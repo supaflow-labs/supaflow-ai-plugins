@@ -1,8 +1,42 @@
 # OpenAI packaging
 
+## GitHub-only local Code edition
+
+`plugins/supaflow-code` is a separate local Codex package in the GitHub marketplace. It launches `supaflow mcp` under `supaflow-local`, uses CLI authentication and selected workspace, and requires a local executor. Its six skills and explicit setup check replace Claude-specific commands and SessionStart injection; no hook or permission preapproval is installed. It must not be included in the hosted public ZIP below. Public local-MCP submission requires separate OpenAI eligibility/approval and is outside this release.
+
 The production submission uses the OpenAI plugin portal's **With MCP** path and points directly to `https://app.supa-flow.io/mcp`.
 
-`submission-source.json` is the repository source of truth for listing fields; it is not an OpenAI upload manifest. The portal scans the MCP endpoint for tools and accepts the provider-neutral skill from `plugins/supaflow/skills/using-supaflow` as part of the same draft.
+`submission-source.json` records the original MCP-only submission's listing source; it is not an OpenAI upload manifest. Registering or scanning the MCP endpoint does **not** bundle repository skills automatically. The public ZIP source is now [`plugin.json`](plugin.json) and [`mcp.json`](mcp.json), with both shared skills (`setup` and `using-supaflow`) copied from `plugins/supaflow/skills` by the archive builder.
+
+The listing links to the [ChatGPT setup guide](https://www.supa-flow.io/agentic-data-pipelines/chatgpt-plugin) and explains signup and secure credential setup. `extensions.com.openai.onboardingSkill` points to `./skills/setup/SKILL.md`. Users choose to run setup after installation; it verifies account/workspace and lists connections without creating or running resources. This does not replace OAuth consent or automatically authorize mutations.
+
+## Prepare a public skills update
+
+Use a Python virtual environment with PyYAML installed. From the repository root:
+
+```bash
+python scripts/validate.py
+python -m unittest discover -s scripts -p 'test_openai_submission.py' -v
+node --test scripts/test-hosted-mcp-resilience.test.mjs
+node --test scripts/test-schema-pagination.test.mjs
+python scripts/build_openai_submission.py
+```
+
+The builder creates `dist/supaflow-openai-1.1.1.zip`, then reads back and validates the **actual ZIP**. Version 1.1.1 is local next-version preparation only; do not replace the submitted 1.1.0 review or its retained archive without explicit authorization. The pagination trace tests validate traversal invariants against sparse-page and skipped-offset fixtures; they do not prove ChatGPT activation or model behavior. The builder fails if the skill, logo, or portable manifests are missing; if any extra files (including private `.app.json` or compatibility manifests) appear; or if the production endpoint changes or gains OAuth overrides. Existing archives are not overwritten: use a separate `--output-dir` for another review build.
+
+This upload preserves the published package name `app-6abadf90c69881919b46c92f36bcfc99` and uses one remote MCP declaration with the existing endpoint and no authentication overrides. Keep the original app-bound local package unchanged. Do not upload that local package as the public ZIP.
+
+For the existing published plugin, select **Create draft from ZIP**, not a new plugin. After an authorized upload, verify:
+
+1. The saved draft contains both `setup` and `using-supaflow`, the intended candidate version, the onboarding reference, and the ChatGPT landing-page link.
+2. The server reuses app `asdk_app_6abadf90c69881919b46c92f36bcfc99`, including its configured OAuth connection. If it instead shows a separate **Connection unknown** entry, stop and report the update as blocked; do not create a duplicate app.
+3. Listing, prompts, existing review cases, reviewer access, demo, countries, and translations remain correct. The ZIP deliberately omits review cases and country targeting so it does not replace saved values. Reviewer credentials must remain only in secure portal fields.
+4. Run setup against that exact saved draft in a fresh chat and after installing during an existing chat. Verify connected and disconnected accounts, ambiguous and empty workspaces, and missing connections; confirm setup performs only read-only calls. Then run the operational skill workflow. An MCP-only test of published `1.0.0` does not validate either new skill.
+5. Resolve applicable scan findings and have the publisher complete current attestations before submitting. Submission and publication remain separate authorized steps.
+
+Future app-only publication can restore an auto-generated package and remove ZIP-added skills. Use the package/ZIP update path for subsequent skill releases and check the saved skill inventory every time.
+
+The release preparation and remaining online checks are recorded in [`release-preparation.md`](release-preparation.md).
 
 Before submission:
 

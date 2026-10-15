@@ -115,6 +115,36 @@ test('job polling stops immediately on a permanent tool failure', async () => {
   assert.equal(calls, 1);
 });
 
+test('warning and timeout states stop polling with their original outcome', async () => {
+  for (const status of ['completed_with_warning', 'timed_out']) {
+    let calls = 0;
+    const client = {
+      async callTool() {
+        calls += 1;
+        return { structuredContent: { job: { status } } };
+      },
+    };
+    assert.equal(await pollJob(client, 'workspace-test', 'job-test', {
+      requireSuccess: false, timeoutMs: 1_000, intervalMs: 0,
+    }), status);
+    assert.equal(calls, 1);
+  }
+});
+
+test('success-required monitoring accepts warnings but rejects timeouts', async () => {
+  const client = (status) => ({
+    async callTool() {
+      return { structuredContent: { job: { status } } };
+    },
+  });
+  assert.equal(await pollJob(client('completed_with_warning'), 'workspace-test', 'job-test', {
+    timeoutMs: 1_000, intervalMs: 0,
+  }), 'completed_with_warning');
+  await assert.rejects(pollJob(client('timed_out'), 'workspace-test', 'job-test', {
+    timeoutMs: 1_000, intervalMs: 0,
+  }), /Job reached terminal status timed_out/);
+});
+
 test('catalog-reset polling handles a transient response and waits for restoration', async () => {
   let calls = 0;
   const client = {
