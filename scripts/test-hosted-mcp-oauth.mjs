@@ -1184,6 +1184,7 @@ async function main() {
   const redirectUri = requiredEnvironment('SUPAFLOW_OAUTH_REDIRECT_URI');
   const listJobsOnly = process.env.SUPAFLOW_LIST_JOBS_ONLY === 'true';
   const listInventoryOnly = process.env.SUPAFLOW_LIST_INVENTORY_ONLY === 'true';
+  const oauthOnly = process.env.SUPAFLOW_OAUTH_ONLY === 'true';
   const mcpUrl = process.env.SUPAFLOW_MCP_URL?.trim() || DEFAULT_MCP_URL;
   const timeoutMs = Number(process.env.SUPAFLOW_OAUTH_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
   const jobTimeoutMs = Number(
@@ -1220,6 +1221,10 @@ async function main() {
     }
   }
   console.log(`PASS tools/list count=${actualNames.length}`);
+  if (oauthOnly) {
+    console.log('PASS oauth_only_no_resource_mutations');
+    return;
+  }
   if (listJobsOnly) {
     await listJobsThroughMcp(client);
     return;

@@ -45,6 +45,25 @@ node --test scripts/test-supaflow-code.test.mjs
 
 Then validate the Codex plugin package with the current OpenAI plugin validator before release.
 
+### Test OAuth without Snowflake compute
+
+Use a registered public development OAuth client with the loopback redirect
+below. Run against the existing local Supaflow app:
+
+```bash
+SUPAFLOW_OAUTH_CLIENT_ID='<PUBLIC_DEV_CLIENT_ID>' \
+SUPAFLOW_OAUTH_REDIRECT_URI='http://127.0.0.1:8765/callback' \
+SUPAFLOW_MCP_URL='http://localhost:3000/mcp' \
+SUPAFLOW_OAUTH_ONLY=true \
+node scripts/test-hosted-mcp-oauth.mjs
+```
+
+Open the printed authorization URL and sign in with a development account.
+This mode checks PKCE authorization, resource-bound token claims, refresh, and
+authenticated tool discovery, then exits before any data operations. Tokens
+remain in process memory. It does not start Streamlit or Snowflake compute and
+does not prove Snowflake's own OAuth client or native-agent enrollment.
+
 ## Install in Codex
 
 The repository is a Codex marketplace with two distinct editions. For hosted Supaflow:
