@@ -20,6 +20,12 @@ datasource configuration. When none of those paths is available, credential or
 connector OAuth setup must be completed in the Supaflow UI first. Plaintext
 credentials are never accepted through chat or MCP tool input.
 
+## Enable account access before connecting
+
+Access is off by default. An organization administrator or personal-account owner must select the intended account in [Supaflow Settings > API Keys](https://app.supa-flow.io/settings/api-keys), open **Permissions**, check **Enable API access**, and select the supported hosted application under **OAuth applications**: **ChatGPT** for the ChatGPT integration or **Claude** for the Claude integration. Click **Save changes**, review, then **Save access settings** before connecting. API keys are not required for hosted OAuth. Unknown or unchecked OAuth clients are denied; a different host is not automatically allowed because it uses MCP.
+
+Local Supaflow Code uses **Supaflow CLI** OAuth or **Allow API keys**, independently of hosted application selection. See the [API access guide](https://www.supa-flow.io/docs/settings/api-keys#enable-api-access-first). On denial, check account, administrator role and saved permissions before reconnecting; a connected label alone does not verify access. Do not enable access automatically. Native agents and OTP enrollment/recovery remain independent.
+
 ## Local agent boundary
 
 The Supaflow agent is always local or customer-hosted. This repository does not package agent installation or lifecycle commands into the hosted plugin. Agent, Docker, filesystem, process, and local log operations remain in `supaflow-cli` and its local stdio MCP server.

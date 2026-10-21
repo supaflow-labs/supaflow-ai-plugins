@@ -2,6 +2,14 @@
 
 GitHub-installed local CLI workflows and CLI-backed stdio MCP. Use the separate hosted **Supaflow** plugin for browser chat. This package is not a public-directory submission and does not configure hosted OAuth.
 
+## Enable access before local login
+
+An organization administrator or personal-account owner must select the intended account in [Supaflow Settings > API Keys](https://app.supa-flow.io/settings/api-keys), open **Permissions**, check **Enable API access** and **Supaflow CLI** under **OAuth applications**, then click **Save changes**, review, and **Save access settings**. Access is off by default; administrator status alone does not enable it. API keys are not required for browser OAuth.
+
+For explicitly chosen key-based/headless use, enable **Allow API keys** instead and create a key in the **Keys** tab. Existing keys need this permission too. Local stdio MCP reuses the CLI's login and access settings; selecting hosted **Claude** or **ChatGPT** does not authorize this local path. A key can still be used by the CLI when CLI OAuth is unchecked.
+
+On access denial, have the user or their administrator check the active account and saved permissions before reconnecting. Never change access settings automatically, request credentials in chat, or switch authentication methods to work around a denial. Existing agent identities and dashboard-issued OTP enrollment/recovery remain independent of these settings; CLI-managed operations still need permitted CLI authentication. See the [API access guide](https://www.supa-flow.io/docs/settings/api-keys#enable-api-access-first).
+
 ## Install
 
 Install Node.js 18+ and the Supaflow CLI 0.8.0+ separately. Dependency installation requires the user's approval. Docker is needed only for local private-agent operations, not ordinary pipeline operations. Python is not required by this package's setup check.
@@ -11,7 +19,7 @@ npm install -g @getsupaflow/cli
 supaflow auth status
 ```
 
-If needed, run `supaflow auth login` in your own terminal. CLI 0.8.0+ opens browser login with PKCE. Review the account, organization, and permissions in the browser. API keys remain optional for headless use through `SUPAFLOW_API_KEY`; never enter credentials into an AI conversation. Existing API-key logins continue to work. Older CLI releases may still prompt for a key; upgrade to CLI 0.8.0 or newer. Then run `supaflow workspaces select` and verify the selected workspace.
+If needed, run `supaflow auth login` in your own terminal. CLI 0.8.0+ opens browser login with PKCE. Review the account, organization, and permissions in the browser. API keys remain optional for headless use through `SUPAFLOW_API_KEY`; never enter credentials into an AI conversation. Existing API-key logins work only while API access and API keys remain enabled. Older CLI releases may still prompt for a key; upgrade to CLI 0.8.0 or newer. Then run `supaflow workspaces select` and verify the selected workspace.
 
 ```bash
 codex plugin marketplace add https://github.com/supaflow-labs/supaflow-ai-plugins.git
