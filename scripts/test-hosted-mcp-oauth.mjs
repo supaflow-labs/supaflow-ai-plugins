@@ -379,7 +379,6 @@ export function createMcpClient(
 
   const invoked = new Set();
   async function callTool(name, args, { quiet = false, allowError = false } = {}) {
-    invoked.add(name);
     const result = await rpc('tools/call', { name, arguments: args });
     if (result?.isError && !allowError) {
       const message = result.content?.find((item) => item.type === 'text')?.text;
@@ -392,7 +391,8 @@ export function createMcpClient(
       }
       throw new Error(`${name} returned a tool error${message ? `: ${message}` : ''}`);
     }
-    if (!quiet) console.log(`PASS ${name}`);
+    if (!result?.isError) invoked.add(name);
+    if (!quiet) console.log(`${result?.isError ? 'FAIL' : 'PASS'} ${name}`);
     return result;
   }
   return { rpc, callTool, invoked };
@@ -622,16 +622,25 @@ async function runInventoryPagination(client) {
   );
 }
 
-async function runLiveParity(
+export async function runLiveParity(
   client,
   contract,
   jobTimeoutMs,
   sourceDatasourceId,
   destinationProjectId,
   requestedObjectNames,
+  sourceConnectorType = 'MYSQL',
 ) {
   if (process.env.SUPAFLOW_LIVE_MUTATIONS !== 'true') {
     throw new Error('Set SUPAFLOW_LIVE_MUTATIONS=true to authorize isolated live resource mutations');
+  }
+
+  if (!['MYSQL', 'SALESFORCE'].includes(sourceConnectorType)) throw new Error('Unsupported E2E source connector');
+  if (process.env.SUPAFLOW_E2E_DESTINATION_WRITES_ACK !== 'I_ACCEPT_TEST_DESTINATION_WRITES') {
+    throw new Error('Set SUPAFLOW_E2E_DESTINATION_WRITES_ACK=I_ACCEPT_TEST_DESTINATION_WRITES');
+  }
+  if (requestedObjectNames.length < 2 || requestedObjectNames.length > 5 || new Set(requestedObjectNames).size !== requestedObjectNames.length) {
+    throw new Error('Select two to five distinct E2E objects');
   }
 
   const cleanup = { workspaceId: null, datasourceId: null, projectId: null, pipelines: [], scheduleId: null };
@@ -679,9 +688,9 @@ async function runLiveParity(
         identifier: sourceDatasourceId,
       }),
     ).datasource;
-    if (!source || source.connectorType !== 'MYSQL') {
+    if (!source || source.connectorType !== sourceConnectorType) {
       throw new Error(
-        'SUPAFLOW_E2E_SOURCE_DATASOURCE_ID must identify the Docker-backed MySQL fixture',
+        `SUPAFLOW_E2E_SOURCE_DATASOURCE_ID must identify a ${sourceConnectorType} test fixture`,
       );
     }
     await client.callTool('datasources_init', {
@@ -1181,7 +1190,8 @@ async function runLiveParity(
 
 async function main() {
   const clientId = requiredEnvironment('SUPAFLOW_OAUTH_CLIENT_ID');
-  const redirectUri = requiredEnvironment('SUPAFLOW_OAUTH_REDIRECT_URI');
+  const testClient = process.env.SUPAFLOW_MCP_TEST_CLIENT || 'direct';
+  if (!['direct', 'inspector'].includes(testClient)) throw new Error('SUPAFLOW_MCP_TEST_CLIENT must be direct or inspector');
   const listJobsOnly = process.env.SUPAFLOW_LIST_JOBS_ONLY === 'true';
   const listInventoryOnly = process.env.SUPAFLOW_LIST_INVENTORY_ONLY === 'true';
   const oauthOnly = process.env.SUPAFLOW_OAUTH_ONLY === 'true';
@@ -1190,77 +1200,82 @@ async function main() {
   const jobTimeoutMs = Number(
     process.env.SUPAFLOW_JOB_TIMEOUT_MS || DEFAULT_JOB_TIMEOUT_MS,
   );
-  const oauthSession = await authorize({ clientId, redirectUri, mcpUrl, timeoutMs });
-  await oauthSession.refresh();
-  const client = createMcpClient(mcpUrl, oauthSession);
+  let client;
+  if (testClient === 'inspector') {
+    const { createInspectorClient } = await import('./hosted-mcp-inspector-client.mjs');
+    client = createInspectorClient(mcpUrl, { clientId });
+  } else {
+    const redirectUri = requiredEnvironment('SUPAFLOW_OAUTH_REDIRECT_URI');
+    const oauthSession = await authorize({ clientId, redirectUri, mcpUrl, timeoutMs });
+    await oauthSession.refresh();
+    client = createMcpClient(mcpUrl, oauthSession);
+  }
 
   const contractUrl = new URL('../contracts/hosted-tools.json', import.meta.url);
   const contract = JSON.parse(await readFile(fileURLToPath(contractUrl), 'utf8'));
-  const toolList = await client.rpc('tools/list', {});
-  const actualNames = toolList.tools?.map((tool) => tool.name) || [];
-  if (JSON.stringify(actualNames) !== JSON.stringify(contract.tools)) {
-    throw new Error('tools/list does not match contracts/hosted-tools.json');
-  }
-  if (actualNames.some((name) => name.startsWith('agent_'))) {
-    throw new Error('Hosted MCP advertised a forbidden local-agent tool');
-  }
-  for (const tool of toolList.tools || []) {
-    const expectedAccessScope =
-      tool.annotations?.readOnlyHint === true ? 'supaflow:read' : 'supaflow:write';
-    for (const schemes of [tool.securitySchemes, tool._meta?.securitySchemes]) {
-      const oauth = schemes?.find((scheme) => scheme.type === 'oauth2');
-      if (
-        !oauth ||
-        !oauth.scopes?.includes('user:org:read') ||
-        !oauth.scopes?.includes(expectedAccessScope)
-      ) {
-        throw new Error(
-          `${tool.name} is missing its ${expectedAccessScope} OAuth security scheme`,
-        );
+  let lifecycleCompleted = false;
+  try {
+    const toolList = await client.rpc('tools/list', {});
+    const actualNames = toolList.tools?.map((tool) => tool.name) || [];
+    if (JSON.stringify(actualNames) !== JSON.stringify(contract.tools)) {
+      throw new Error('tools/list does not match contracts/hosted-tools.json');
+    }
+    if (actualNames.some((name) => name.startsWith('agent_'))) {
+      throw new Error('Hosted MCP advertised a forbidden local-agent tool');
+    }
+    for (const tool of toolList.tools || []) {
+      const expectedAccessScope =
+        tool.annotations?.readOnlyHint === true ? 'supaflow:read' : 'supaflow:write';
+      for (const schemes of [tool.securitySchemes, tool._meta?.securitySchemes]) {
+        const oauth = schemes?.find((scheme) => scheme.type === 'oauth2');
+        if (
+          !oauth ||
+          !oauth.scopes?.includes('user:org:read') ||
+          !oauth.scopes?.includes(expectedAccessScope)
+        ) {
+          throw new Error(
+            `${tool.name} is missing its ${expectedAccessScope} OAuth security scheme`,
+          );
+        }
       }
     }
-  }
-  console.log(`PASS tools/list count=${actualNames.length}`);
-  if (oauthOnly) {
-    console.log('PASS oauth_only_no_resource_mutations');
-    return;
-  }
-  if (listJobsOnly) {
-    await listJobsThroughMcp(client);
-    return;
-  }
-  if (listInventoryOnly) {
-    await runInventoryPagination(client);
-    return;
-  }
+    console.log(`PASS tools/list count=${actualNames.length}`);
+    if (oauthOnly) {
+      console.log('PASS oauth_only_no_resource_mutations');
+      return;
+    }
+    if (listJobsOnly) {
+      await listJobsThroughMcp(client);
+      return;
+    }
+    if (listInventoryOnly) {
+      await runInventoryPagination(client);
+      return;
+    }
 
-  const sourceDatasourceId = requiredEnvironment('SUPAFLOW_E2E_SOURCE_DATASOURCE_ID');
-  const destinationProjectId = requiredEnvironment(
-    'SUPAFLOW_E2E_DESTINATION_PROJECT_ID',
-  );
-  const requestedObjectNames = requiredEnvironment('SUPAFLOW_E2E_OBJECTS')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-  if (requestedObjectNames.length < 2 || requestedObjectNames.length > 5) {
-    throw new Error('SUPAFLOW_E2E_OBJECTS must contain between two and five objects');
-  }
-  if (
-    process.env.SUPAFLOW_E2E_DESTINATION_WRITES_ACK !==
-    'I_ACCEPT_TEST_DESTINATION_WRITES'
-  ) {
-    throw new Error(
-      'Set SUPAFLOW_E2E_DESTINATION_WRITES_ACK=I_ACCEPT_TEST_DESTINATION_WRITES after approving possible residual writes in the fixture destination',
+    const sourceDatasourceId = requiredEnvironment('SUPAFLOW_E2E_SOURCE_DATASOURCE_ID');
+    const destinationProjectId = requiredEnvironment(
+      'SUPAFLOW_E2E_DESTINATION_PROJECT_ID',
     );
+    const requestedObjectNames = requiredEnvironment('SUPAFLOW_E2E_OBJECTS')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    await runLiveParity(
+      client,
+      contract,
+      jobTimeoutMs,
+      sourceDatasourceId,
+      destinationProjectId,
+      requestedObjectNames,
+      process.env.SUPAFLOW_E2E_SOURCE_CONNECTOR_TYPE || 'MYSQL',
+    );
+    lifecycleCompleted = true;
+  } finally {
+    if (client.writeReport) {
+      await client.writeReport(process.env.SUPAFLOW_MCP_TEST_REPORT || 'artifacts/hosted-mcp/inspector-report.json', contract.tools, lifecycleCompleted);
+    }
   }
-  await runLiveParity(
-    client,
-    contract,
-    jobTimeoutMs,
-    sourceDatasourceId,
-    destinationProjectId,
-    requestedObjectNames,
-  );
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

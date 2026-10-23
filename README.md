@@ -51,6 +51,13 @@ node --test scripts/test-supaflow-code.test.mjs
 
 Then validate the Codex plugin package with the current OpenAI plugin validator before release.
 
+### Test all hosted tools through MCP Inspector
+
+Follow [the hosted MCP testing runbook](docs/hosted-mcp-testing.md) for Inspector
+installation, reviewer OAuth setup, fixture selection, the full lifecycle suite,
+and sanitized coverage reports. Both Inspector and the direct OAuth client use
+the same lifecycle and cleanup code.
+
 ### Test OAuth without Snowflake compute
 
 Use a registered public development OAuth client with the loopback redirect

@@ -25,3 +25,9 @@
 
 - Preserve user changes and do not commit or push without explicit approval.
 - Use Conventional Commits with imperative, scoped messages when a commit is requested.
+
+## Hosted MCP verification
+
+- Use `docs/hosted-mcp-testing.md` for hosted lifecycle testing through MCP Inspector or the direct OAuth client. Reuse the shared lifecycle and cleanup in `scripts/test-hosted-mcp-oauth.mjs`; do not fork provider-specific copies.
+- Run `node --test scripts/test-hosted-mcp-inspector.test.mjs scripts/test-hosted-mcp-resilience.test.mjs` when changing the Inspector adapter or shared lifecycle. Live runs require an explicitly selected account, endpoint, disposable fixtures, and mutation/destination-write opt-ins.
+- Keep Inspector OAuth storage outside the repository. Coverage reports must contain tool names and outcomes only, never credentials, fixture configuration, or raw responses.

@@ -94,6 +94,10 @@ harness below. It is not part of the installable OpenAI package.
 
 ### Hosted server lifecycle harness
 
+For MCP Inspector and reviewer Salesforce fixtures, use the shared
+[hosted MCP testing runbook](../../docs/hosted-mcp-testing.md). It runs this same
+lifecycle through the Inspector CLI and produces a sanitized coverage report.
+
 The production plugin manifest always points to `https://app.supa-flow.io/mcp`.
 For a local run, use a generated, ignored marketplace copy that points to
 `http://localhost:3000/mcp`; never change the production manifest to a local
