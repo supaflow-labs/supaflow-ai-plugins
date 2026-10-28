@@ -61,14 +61,16 @@ function decodeJwtPayload(token) {
   }
 }
 
-function assertResourceBoundAccessToken(token, { clientId, issuer, resource }) {
+export function assertResourceBoundAccessToken(token, { clientId, issuer, resource }) {
   const payload = decodeJwtPayload(token);
   const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
   if (payload.iss !== issuer || !audiences.includes(resource)) {
     throw new Error('OAuth access token is not bound to the advertised MCP resource');
   }
-  if (payload.client_id !== clientId || payload.token_use !== 'mcp_access') {
-    throw new Error('OAuth access token has the wrong client or token use');
+  // Direct Clerk OAuth tokens do not carry the legacy Supaflow token_use claim.
+  // The resource server verifies the signature; this probe checks grant binding.
+  if (payload.client_id !== clientId) {
+    throw new Error('OAuth access token has the wrong client');
   }
   const scopes = new Set(
     typeof payload.scope === 'string' ? payload.scope.split(/\s+/).filter(Boolean) : [],
@@ -451,7 +453,7 @@ export async function pollCatalogReset(
   client,
   workspaceId,
   jobId,
-  { timeoutMs, intervalMs = 2_000 },
+  { requireSuccess = true, timeoutMs, intervalMs = 2_000 },
 ) {
   const deadline = Date.now() + timeoutMs;
   let lastState = null;
@@ -482,10 +484,11 @@ export async function pollCatalogReset(
       lastState = state;
     }
     if (reset?.maintenance_active === false) {
-      if (state !== 'completed') {
+      const safelySettled = ['completed', 'restored', 'unchanged'].includes(state);
+      if (!safelySettled || (requireSuccess && state !== 'completed')) {
         throw new Error(`Catalog reset finished with unexpected state ${state || 'unknown'}`);
       }
-      console.log('PASS datasources_catalog_reset_status terminal=completed');
+      console.log(`${state === 'completed' ? 'PASS' : 'INFO'} datasources_catalog_reset_status terminal=${state}`);
       return;
     }
     await sleep(intervalMs);
@@ -1099,6 +1102,7 @@ export async function runLiveParity(
       for (const jobId of activeCatalogResetJobs) {
         try {
           await pollCatalogReset(client, cleanup.workspaceId, jobId, {
+            requireSuccess: false,
             timeoutMs: jobTimeoutMs,
           });
         } catch {

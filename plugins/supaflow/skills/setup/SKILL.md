@@ -27,4 +27,4 @@ If connections are absent or not ready, explain what is missing and direct the u
 
 Summarize the verified account, selected workspace, available connections, and remaining setup. Offer a read-only next step such as listing pipelines or inspecting an existing pipeline. Use the neighboring [Supaflow workflow skill](../using-supaflow/SKILL.md) for the user's chosen operational task; request authorization separately for changes or execution.
 
-Provide the [ChatGPT setup guide](https://www.supa-flow.io/agentic-data-pipelines/chatgpt-plugin) when useful. The hosted plugin does not require a CLI, Docker, or a private agent for its core workflow. For explicitly requested local agent operations, explain the separate Supaflow Code edition linked from that guide rather than attempting them through hosted tools.
+Provide the [Supaflow documentation](https://www.supa-flow.io/docs) when useful. The hosted plugin does not require a CLI, Docker, or a private agent for its core workflow. For explicitly requested local agent operations, explain the separate Supaflow CLI workflow rather than attempting them through hosted tools.

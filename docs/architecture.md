@@ -1,10 +1,11 @@
 # Architecture
 
-The repository is a packaging layer around one hosted MCP runtime.
+The repository packages clients of the existing hosted and local MCP runtimes.
 
 ```text
 ChatGPT / Codex ─┐
-Claude           ┴─ OAuth 2.1 ─> https://app.supa-flow.io/mcp ─> Supabase RLS
+Claude           ┤
+CoCo candidate   ┴─ OAuth 2.1 ─> https://app.supa-flow.io/mcp ─> Supabase RLS
 
 Snowflake Agent (experimental; exact OAuth resource forwarding not yet validated)
 
@@ -23,12 +24,22 @@ The packaging repository contains no business logic and no credentials. The
 ChatGPT/Codex package binds to the registered Supaflow OpenAI app, while Claude
 discovers OAuth from the hosted MCP endpoint. Supported vendors connect to the
 same stable hosted endpoint; only their packaging and registration mechanisms
-differ. Snowflake is not a supported vendor target until its OAuth flow passes a
-live authorization-code and refresh-token test.
+differ. The hosted CoCo candidate is assembled separately under
+`vendors/snowflake/cortex-code`; its dedicated public OAuth client and
+`cortex_code` policy grant do not share native Snowflake permissions. CoCo's
+authorization and refresh must pass live verification before release. The
+experimental Cortex Agent integration remains separate.
 
 ## Token lifecycle
 
-The vendor sends the user through Clerk authorization, then exchanges the authorization code or opaque Clerk refresh token through the Supaflow token endpoint. The token endpoint verifies Clerk's result and returns a short-lived, resource-bound Supaflow MCP access token together with Clerk's latest opaque refresh token, which may rotate. Each MCP request presents the Supaflow access token. The hosted server verifies its signature, issuer, audience, client, lifetime, and scopes; revalidates organization membership; and mints a new one-hour Supabase-compatible JWT for that single server-side tool call. The internal JWT is never returned to the vendor. Its expiry cannot break a later MCP call because the next call mints a new internal token.
+New connections discover Clerk through Supaflow's protected-resource metadata,
+authorize with Clerk, and exchange/refresh at Clerk's discovered token endpoint.
+The access token must be bound to `https://app.supa-flow.io/mcp`. The hosted app
+verifies the Clerk RS256 signature, issuer, audience, client, lifetime, and scopes,
+then revalidates membership and application access before minting an internal
+Supabase-compatible JWT for server-side operations. The internal JWT is never
+returned to the client. Existing facade-issued tokens and legacy refresh remain
+compatible; new plugins must not force that older token exchange path.
 
 ## Failure and retry contract
 

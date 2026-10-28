@@ -105,6 +105,8 @@ def validate_code_package(package: Path) -> None:
 
 
 def main() -> None:
+    from build_cortex_submission import source_files, validate_bundle
+    validate_bundle(source_files(), draft=True)
     codex = read_json(PLUGIN / ".codex-plugin" / "plugin.json")
     claude = read_json(PLUGIN / ".claude-plugin" / "plugin.json")
     app = read_json(PLUGIN / ".app.json")
@@ -262,7 +264,7 @@ def main() -> None:
         EXPECTED_MCP_URL,
         "supaflow:read",
         "supaflow:write",
-        "authorization-code and refresh-token grants",
+        "authorization-code and refresh-token",
     )
     for marker in required_snowflake_markers:
         if marker not in snowflake_readme:

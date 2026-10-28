@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   assertCanonicalProtectedResourceMetadata,
+  assertResourceBoundAccessToken,
   createMcpClient,
   listInventoryById,
   McpRetryableError,
@@ -10,6 +11,28 @@ import {
   pollCatalogReset,
   pollJob,
 } from './test-hosted-mcp-oauth.mjs';
+
+test('direct Clerk grants need no legacy token-use claim but retain resource and client checks', () => {
+  const expected = {
+    clientId: 'public-test-client',
+    issuer: 'https://clerk.example.test',
+    resource: 'https://app.example.test/mcp',
+  };
+  const claims = {
+    iss: expected.issuer, aud: expected.resource, client_id: expected.clientId,
+    exp: Math.floor(Date.now() / 1000) + 300,
+    scope: 'user:org:read supaflow:read supaflow:write',
+  };
+  const token = (patch = {}) => `header.${Buffer.from(JSON.stringify({ ...claims, ...patch })).toString('base64url')}.signature`;
+  assert.doesNotThrow(() => assertResourceBoundAccessToken(token(), expected));
+  for (const patch of [
+    { client_id: 'another-client' }, { client_id: undefined },
+    { iss: 'https://other.example.test' }, { aud: 'https://app.example.test' },
+    { scope: 'user:org:read supaflow:read' }, { exp: 1 },
+  ]) {
+    assert.throws(() => assertResourceBoundAccessToken(token(patch), expected));
+  }
+});
 
 test('immutable inventory pagination continues through the terminal empty page', async () => {
   const requests = [];
@@ -177,6 +200,29 @@ test('catalog-reset polling handles a transient response and waits for restorati
     intervalMs: 0,
   });
   assert.equal(calls, 3);
+});
+
+test('cleanup accepts a restored catalog without treating the reset as successful', async () => {
+  for (const state of ['restored', 'unchanged']) {
+    const client = { async callTool() {
+      return { structuredContent: { catalog_reset: {
+        catalog_state: state, maintenance_active: false,
+      } } };
+    } };
+    await assert.rejects(pollCatalogReset(client, 'workspace-test', 'job-test', {
+      timeoutMs: 1_000, intervalMs: 0,
+    }), /unexpected state/);
+    await pollCatalogReset(client, 'workspace-test', 'job-test', {
+      requireSuccess: false, timeoutMs: 1_000, intervalMs: 0,
+    });
+  }
+  await assert.rejects(pollCatalogReset({ async callTool() {
+    return { structuredContent: { catalog_reset: {
+      catalog_state: 'unknown', maintenance_active: false,
+    } } };
+  } }, 'workspace-test', 'job-test', {
+    requireSuccess: false, timeoutMs: 1_000, intervalMs: 0,
+  }), /unexpected state/);
 });
 
 test('MCP client classifies retryable HTTP and tool responses', async (context) => {

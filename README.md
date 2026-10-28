@@ -9,9 +9,10 @@ The repository offers hosted Supaflow and a separate GitHub-installed Supaflow C
 | ChatGPT / Codex         | `.codex-plugin/plugin.json`, registered OpenAI app binding, and shared skill |
 | Local Codex            | `plugins/supaflow-code`: portable manifest, local stdio MCP, local workflow skills and setup checks |
 | Claude                  | `.claude-plugin/plugin.json`, shared skill, and `.mcp.json`               |
+| Snowflake Cortex Code CLI | Hosted OAuth candidate assembled from shared skills; [design and submission](vendors/snowflake/cortex-code/DESIGN.md) |
 | Snowflake Cortex Agents | Experimental design notes; OAuth resource forwarding is not yet validated |
 
-The hosted Codex and Claude targets connect to `https://app.supa-flow.io/mcp`. Supaflow Code instead launches the installed `supaflow mcp` locally; it does not use that hosted connection. The hosted server exposes the reviewed Supaflow control plane: workspace and connector discovery, safe datasource management including restoration-aware catalog reset, project and pipeline management, pipeline runs, job monitoring/cancellation, and schedules. Snowflake packaging remains experimental until its OAuth client is proven to forward the exact MCP resource during authorization-code and refresh-token exchanges.
+The hosted Codex and Claude targets connect to `https://app.supa-flow.io/mcp`. Supaflow Code instead launches the installed `supaflow mcp` locally; it does not use that hosted connection. The hosted server exposes the reviewed Supaflow control plane: workspace and connector discovery, safe datasource management including restoration-aware catalog reset, project and pipeline management, pipeline runs, job monitoring/cancellation, and schedules. The CoCo candidate uses the same hosted endpoint with a dedicated public OAuth client; live CoCo authorization and refresh remain release gates. Cortex Agents are a separate experimental target.
 
 The hosted integration operates existing Supaflow connections. Creating a new
 datasource is supported when the user selects an approved connector OAuth flow,
@@ -37,7 +38,7 @@ The Supaflow agent is always local or customer-hosted. This repository does not 
 - `contracts/hosted-tools.json`: reviewed hosted tool allowlist.
 - `vendors/openai`: OpenAI portal listing source and submission notes.
 - `vendors/claude`: Claude packaging notes.
-- `vendors/snowflake`: experimental Snowflake Cortex Agent design notes; not a supported deployment package.
+- `vendors/snowflake`: separate Cortex Code packaging and experimental Cortex Agent notes.
 - `docs/architecture.md`: runtime ownership and token flow.
 
 ## Validate
@@ -50,6 +51,11 @@ node --test scripts/test-supaflow-code.test.mjs
 ```
 
 Then validate the Codex plugin package with the current OpenAI plugin validator before release.
+
+For CoCo, follow [the build and submission checklist](vendors/snowflake/cortex-code/SUBMISSION.md).
+The builder emits a self-contained directory and ZIP, excludes other providers'
+bindings, and copies the shared hosted skills. Draft artifacts cannot be released
+without a dedicated registered public client ID and the live OAuth checks.
 
 ### Test all hosted tools through MCP Inspector
 
@@ -106,4 +112,4 @@ separate local end-to-end harness.
 
 ## Release status
 
-Version `0.2.0` adds the reviewed hosted control-plane surface for Codex and Claude. The exact contract is validated from `contracts/hosted-tools.json`; local agent lifecycle commands and local workspace selection remain CLI-only. Snowflake support is explicitly experimental and excluded from this release claim.
+Version `0.2.0` adds the reviewed hosted control-plane surface for Codex and Claude. The exact contract is validated from `contracts/hosted-tools.json`; local agent lifecycle commands and local workspace selection remain CLI-only. The separate CoCo candidate and experimental Cortex Agent work are excluded from this release claim.
