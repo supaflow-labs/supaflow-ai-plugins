@@ -27,10 +27,13 @@ CoCo CLI + Supaflow plugin
 ## Packaging
 
 Provider source stays here. `scripts/build_cortex_submission.py` assembles one
-self-contained directory and review ZIP. It copies the canonical `setup` and
-`using-supaflow` skills from `plugins/supaflow` without maintaining forks.
+self-contained directory and review ZIP. It derives the `setup` and
+`using-supaflow` skills from `plugins/supaflow`, applying CoCo catalog frontmatter
+from `hosted-skill-frontmatter.json`. The setup skill names the bundled workflow
+skill instead of linking outside its own directory. Tests restrict body changes
+to that reference adaptation; the shared ChatGPT/Claude sources stay unchanged.
 The package contains one hidden directory, `.cortex-plugin`, plus `.mcp.json`,
-README, SETUP, license and notices, logo, and three skills: the two unchanged shared skills
+README, SETUP, license and notices, logo, and three skills: the two adapted hosted skills
 plus `setup-supaflow-native-app` from this provider directory. OpenAI bindings, Claude
 manifests, local executors, and contributor runbooks are excluded.
 

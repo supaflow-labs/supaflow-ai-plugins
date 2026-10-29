@@ -33,6 +33,21 @@ def development_url(url: str) -> str:
     return url
 
 
+def cortex_hosted_skill(name: str) -> bytes:
+    """Apply CoCo catalog metadata without editing provider-neutral skill sources."""
+    shared = ROOT / "plugins/supaflow/skills" / name / "SKILL.md"
+    _, _, body = shared.read_text().split("---\n", 2)
+    metadata = json.loads((SOURCE / "hosted-skill-frontmatter.json").read_text())[name]
+    if name == "setup":
+        reference = "[Supaflow workflow skill](../using-supaflow/SKILL.md)"
+        if body.count(reference) != 1:
+            raise ValueError("Shared setup workflow reference changed; review the CoCo adaptation")
+        body = body.replace(reference, "`using-supaflow` skill bundled with this plugin")
+    # JSON values are valid YAML scalars/flow lists; no YAML dependency is needed.
+    header = "\n".join(f"{key}: {json.dumps(value)}" for key, value in metadata.items())
+    return ("---\n" + header + "\n---\n" + body).encode()
+
+
 def source_files(client_id: str | None = None, *, dev_mcp_url: str | None = None) -> dict[str, bytes]:
     files = {
         dest: (SOURCE / source).read_bytes()
@@ -63,8 +78,9 @@ def source_files(client_id: str | None = None, *, dev_mcp_url: str | None = None
                              + files["SETUP.md"])
     files[".mcp.json"] = (json.dumps(mcp, indent=2) + "\n").encode()
     shared = ROOT / "plugins/supaflow"
-    for name in ("assets/logo.png", "skills/setup/SKILL.md", "skills/using-supaflow/SKILL.md"):
-        files[name] = (shared / name).read_bytes()
+    files["assets/logo.png"] = (shared / "assets/logo.png").read_bytes()
+    for name in ("setup", "using-supaflow"):
+        files[f"skills/{name}/SKILL.md"] = cortex_hosted_skill(name)
     files["LICENSE"] = (SOURCE / "LICENSE").read_bytes()
     files["NOTICE"] = (SOURCE / "NOTICE").read_bytes()
     return files
@@ -102,8 +118,8 @@ def validate_bundle(files: dict[str, bytes], *, draft: bool = False, dev_mcp_url
         raise ValueError("Use only hosted HTTP MCP and public OAuth with metadata discovery")
     for name in ("setup", "using-supaflow"):
         path = f"skills/{name}/SKILL.md"
-        if files[path] != (ROOT / "plugins/supaflow" / path).read_bytes():
-            raise ValueError("Hosted skills must match the shared reviewed sources")
+        if files[path] != cortex_hosted_skill(name):
+            raise ValueError("Hosted skills must match the reviewed CoCo adaptation of shared sources")
     if files[NATIVE_SKILL] != (SOURCE / NATIVE_SKILL).read_bytes():
         raise ValueError("Native App setup must match the reviewed CoCo-specific source")
     if files["LICENSE"] != (SOURCE / "LICENSE").read_bytes():

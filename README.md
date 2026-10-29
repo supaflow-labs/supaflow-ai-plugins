@@ -54,7 +54,8 @@ Then validate the Codex plugin package with the current OpenAI plugin validator 
 
 For CoCo, follow [the build and submission checklist](vendors/snowflake/cortex-code/SUBMISSION.md).
 The builder emits a self-contained directory and ZIP, excludes other providers'
-bindings, and copies the shared hosted skills. Draft artifacts cannot be released
+bindings, and adapts the shared hosted skills with CoCo catalog metadata without
+editing the ChatGPT/Claude sources. Draft artifacts cannot be released
 without a dedicated registered public client ID and the live OAuth checks.
 
 ### Test all hosted tools through MCP Inspector

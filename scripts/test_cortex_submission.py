@@ -93,7 +93,45 @@ class CortexSubmissionTests(unittest.TestCase):
         self.assertEqual({p.name for p in shared.iterdir() if p.is_dir()}, {'setup', 'using-supaflow'})
         for name in ('setup', 'using-supaflow'):
             path = f'skills/{name}/SKILL.md'
-            self.assertEqual(self.files[path], openai_source_files()[path])
+            shared = openai_source_files()[path].decode().split('---\n', 2)[2]
+            if name == 'setup':
+                shared = shared.replace(
+                    '[Supaflow workflow skill](../using-supaflow/SKILL.md)',
+                    '`using-supaflow` skill bundled with this plugin')
+            self.assertEqual(self.files[path].decode().split('---\n', 2)[2], shared)
+
+    def test_all_cortex_skills_have_catalog_metadata_and_trigger_descriptions(self):
+        required = {'name', 'id', 'title', 'summary', 'description', 'tools', 'prompt',
+                    'language', 'status', 'author', 'authors', 'type', 'categories'}
+        for path in sorted(p for p in self.files if p.endswith('/SKILL.md')):
+            with self.subTest(path=path):
+                metadata = yaml.safe_load(self.files[path].decode().split('---\n', 2)[1])
+                self.assertEqual(set(metadata), required)
+                self.assertEqual(metadata['name'], Path(path).parent.name)
+                self.assertEqual(metadata['id'], metadata['name'])
+                self.assertLessEqual(len(metadata['title']), 30)
+                self.assertLessEqual(len(metadata['summary']), 140)
+                self.assertTrue(metadata['description'].startswith('Use when'))
+                self.assertIn('Triggers:', metadata['description'])
+                self.assertNotRegex(metadata['description'], r'\b(I|[Mm]y|[Ww]e|[Oo]ur|[Uu]s)\b')
+                self.assertEqual(metadata['type'], 'community')
+                self.assertEqual(metadata['status'], 'Published')
+                self.assertEqual(metadata['authors'], ['Supaflow LLC'])
+                self.assertTrue(metadata['categories'])
+                self.assertNotIn('allowed-tools', metadata)
+                self.assertEqual(metadata['tools'], ['sql_execute'] if path == NATIVE_SKILL else [])
+
+    def test_onboarding_does_not_reference_files_outside_its_skill_directory(self):
+        body = self.files['skills/setup/SKILL.md'].decode().split('---\n', 2)[2]
+        self.assertIn('`using-supaflow` skill bundled with this plugin', body)
+        self.assertNotIn('../', body)
+        self.assertIn(b'../using-supaflow/SKILL.md', openai_source_files()['skills/setup/SKILL.md'])
+
+    def test_setup_explains_release_client_is_public_and_preconfigured(self):
+        setup = self.files['SETUP.md'].decode()
+        self.assertIn('Keep that value unchanged', setup)
+        self.assertIn('not a client secret', setup)
+        self.assertIn('offline draft template', setup)
 
     def test_native_setup_cannot_silently_drift(self):
         self.files[NATIVE_SKILL] += b'\nextra instruction'
@@ -102,7 +140,8 @@ class CortexSubmissionTests(unittest.TestCase):
 
     def test_native_skill_is_discoverable_without_tool_preapproval(self):
         frontmatter = yaml.safe_load(self.files[NATIVE_SKILL].decode().split('---\n', 2)[1])
-        self.assertEqual(set(frontmatter), {'name', 'description'})
+        self.assertNotIn('allowed-tools', frontmatter)
+        self.assertEqual(frontmatter['tools'], ['sql_execute'])
         self.assertEqual(frontmatter['name'], Path(NATIVE_SKILL).parent.name)
         self.assertIsInstance(frontmatter['description'], str)
         self.assertTrue(frontmatter['description'].strip())
