@@ -1,5 +1,16 @@
 # Supaflow AI Plugins Guidelines
 
+## SDLC, PR requirements, and review
+
+- For ordinary work, use a task branch and a PR to `main`; preserve existing changes and keep unrelated commits out of the PR. Read applicable scoped instructions, implement the smallest agreed change, run the relevant local checks, and review the whole diff. Commit/push only within explicit user approval; merge only when authorized, using a merge commit. Separately authorized release-script exceptions below remain exceptions.
+- Fill in [.github/pull_request_template.md](.github/pull_request_template.md). Include the request/specification source, testable acceptance criteria, before/after behavior, deliberate product constraints with rationale, non-goals, verification evidence and gaps, and relevant cross-repository dependencies. Copy essential decisions into the PR; reviewers may not have the workspace or conversation. Update the description when scope or decisions change.
+- Reviewers must assess the implementation against that contract and this repository's invariants. Report a defect only with a concrete scenario, code evidence, and a violated requirement or invariant. Accepted product constraints are not missing features; optional enhancements and ambiguous requirements are separate questions. An intentional constraint cannot excuse a regression, security flaw, or data-integrity defect.
+- Address valid findings with focused fixes and appropriate regression coverage. For a disputed finding, record the requirement and evidence supporting its disposition before resolving it; involve the owner when the requirement is unclear. Do not repeatedly reopen a resolved decision without new evidence, change product behavior merely to quiet a reviewer, or dismiss unresolved defects to pass a gate.
+- Before merging, require successful applicable checks, resolved conversations, and completed review of the current PR head/base. New commits need fresh evidence. Do not bypass GitHub rules, forge a passing status, or substitute a review request/reaction for completed review. After merge, return to clean updated `main`, remove only this task's merged branches/worktrees, and preserve unrelated work.
+
+- The workspace `../AGENTS.md` applies when available. Ordinary changes use PRs to `main`; record package validation and applicable offline test evidence. This repository is outside the devops repositories' installed CI/Codex gate rollout; inspect live settings rather than assuming those rules exist here.
+- Keep hosted/local package boundaries in the PR acceptance criteria. Validate the changed package/provider surface using the existing scripts and testing runbooks. A merge does not authorize submission to a marketplace, live authenticated tests, or installation into a user's environment.
+
 ## Repository scope
 
 - This repository packages Supaflow for AI clients and marketplaces. The hosted MCP runtime remains in `supaflow-app`; the local stdio MCP runtime remains in `supaflow-cli`.
