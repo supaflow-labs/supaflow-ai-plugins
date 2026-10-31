@@ -404,6 +404,48 @@ function content(result) {
   return result?.structuredContent || {};
 }
 
+export function assertKeylessDefault(result, toolName) {
+  assertKeylessPolicy(content(result).config, 'UUID', toolName);
+}
+
+export function assertKeylessPolicy(config, expected, toolName) {
+  if (config?.keyless_object_handling !== expected) {
+    throw new Error(`${toolName} did not return the expected keyless policy (${expected})`);
+  }
+  console.log(`PASS ${toolName} keyless_policy=${expected}`);
+}
+
+export async function editPolicyWithoutSync(client, base, pipelineId, patch) {
+  const args = { ...base, pipeline_id: pipelineId, limit: 200, offset: 0 };
+  const before = content(await client.callTool('jobs_list', args, { quiet: true })).jobs;
+  if (!Array.isArray(before)) throw new Error('jobs_list returned no job inventory before policy edit');
+  const known = new Set(before.map(job => job.id));
+  await client.callTool('pipelines_edit', {
+    ...base, identifier: pipelineId, config_patch: patch,
+  });
+  const after = content(await client.callTool('jobs_list', args, { quiet: true })).jobs;
+  if (!Array.isArray(after) || after.some(job => !known.has(job.id))) {
+    throw new Error('Policy edit unexpectedly enqueued a sync or returned no job inventory');
+  }
+  console.log('PASS policy_edit_did_not_enqueue_sync');
+}
+
+// Keep unexpected successful creates in the lifecycle's existing cleanup list.
+// Tool error text is deliberately not logged: hosted validation may be redacted.
+export async function expectKeylessPolicyRejection(client, toolName, args, trackPipeline) {
+  const result = await client.callTool(toolName, args, { allowError: true, quiet: true });
+  const pipeline = content(result).pipeline;
+  if (pipeline?.id) trackPipeline(pipeline.id);
+  const message = result?.content?.find(item => item.type === 'text')?.text;
+  const validationResponse = message === 'keyless_object_handling must be UUID or ROW_HASH' ||
+    message === `Supaflow could not complete ${toolName}`;
+  if (result?.isError !== true || result._meta?.['mcp/www_authenticate'] ||
+      content(result).error?.retryable === true || !validationResponse) {
+    throw new Error(`${toolName} did not reject the invalid keyless policy as a non-authentication, non-retryable tool error`);
+  }
+  console.log(`PASS ${toolName} invalid_keyless_policy_rejected`);
+}
+
 export async function pollJob(
   client,
   workspaceId,
@@ -781,11 +823,12 @@ export async function runLiveParity(
     cleanup.projectId = project.id;
     createdFixtures.projectIds.add(project.id);
 
-    await client.callTool('pipelines_init', {
+    const initialized = await client.callTool('pipelines_init', {
       ...base,
       source: createdDatasource.id,
       project: project.id,
     });
+    assertKeylessDefault(initialized, 'pipelines_init');
     const plan = content(
       await client.callTool('pipelines_prepare_create', {
         ...base,
@@ -794,6 +837,11 @@ export async function runLiveParity(
         object_preview_limit: 25,
       }),
     );
+    assertKeylessDefault({ structuredContent: plan }, 'pipelines_prepare_create');
+    const trackPipeline = (id) => {
+      if (!createdFixtures.pipelineIds.has(id)) cleanup.pipelines.push(id);
+      createdFixtures.pipelineIds.add(id);
+    };
     const plannedPipeline = content(
       await client.callTool('pipelines_create_from_plan', {
         ...base,
@@ -804,12 +852,29 @@ export async function runLiveParity(
         config_patch: {
           pipeline_prefix: pipelinePrefix,
           is_custom_prefix: true,
+          keyless_object_handling: 'ROW_HASH',
         },
         object_selection: { mode: 'subset', include: selectedObjectNames },
       }),
     ).pipeline;
-    cleanup.pipelines.push(plannedPipeline.id);
-    createdFixtures.pipelineIds.add(plannedPipeline.id);
+    trackPipeline(plannedPipeline.id);
+    assertKeylessPolicy(plannedPipeline.config, 'ROW_HASH', 'pipelines_create_from_plan');
+
+    // Exercise rejection through both public creation paths, not just the handler.
+    // These use the same valid source/project/object scope as successful creates.
+    for (const invalid of ['HASH_AND_MERGE', 'uuid', '', true, 1]) {
+      await expectKeylessPolicyRejection(client, 'pipelines_create_from_plan', {
+        ...base, plan_id: plan.plan_id, name: `MCP E2E Invalid Planned ${suffix}`,
+        confirmed: true, config_patch: { keyless_object_handling: invalid },
+        object_selection: { mode: 'subset', include: selectedObjectNames },
+      }, trackPipeline);
+      await expectKeylessPolicyRejection(client, 'pipelines_create', {
+        ...base, name: `MCP E2E Invalid Direct ${suffix}`,
+        source: createdDatasource.id, project: project.id,
+        config: { keyless_object_handling: invalid },
+        objects: [{ fully_qualified_name: selectedObjectNames[0], selected: true, fields: null }],
+      }, trackPipeline);
+    }
 
     const pipeline = content(
       await client.callTool('pipelines_create', {
@@ -831,8 +896,8 @@ export async function runLiveParity(
         ],
       }),
     ).pipeline;
-    cleanup.pipelines.push(pipeline.id);
-    createdFixtures.pipelineIds.add(pipeline.id);
+    trackPipeline(pipeline.id);
+    assertKeylessPolicy(pipeline.config, 'UUID', 'pipelines_create');
     await client.callTool('pipelines_get', { ...base, identifier: pipeline.id });
     await client.callTool('pipelines_schema_list', {
       ...base,
@@ -921,6 +986,20 @@ export async function runLiveParity(
     await client.callTool('pipelines_disable', { ...base, identifier: pipeline.id });
     await client.callTool('pipelines_enable', { ...base, identifier: pipeline.id });
 
+    for (const invalid of ['HASH_AND_MERGE', 'uuid', '', true, 1]) {
+      await expectKeylessPolicyRejection(client, 'pipelines_edit', {
+        ...base, identifier: pipeline.id, config_patch: { keyless_object_handling: invalid },
+      }, trackPipeline);
+    }
+    await editPolicyWithoutSync(client, base, pipeline.id, {
+      keyless_object_handling: 'ROW_HASH',
+    });
+    // Omission must remain a valid unrelated edit while ROW_HASH is selected.
+    // The hosted read API does not expose configs; persistence is unit-tested in the app.
+    await editPolicyWithoutSync(client, base, pipeline.id, {
+      trigger_auto_re_sync_on_new_column: false,
+    });
+
     const smokeJobId = content(
       await client.callTool('pipelines_sync', {
         ...base,
@@ -940,7 +1019,23 @@ export async function runLiveParity(
       identifier: pipeline.id,
       name: `MCP E2E Smoke Pipeline Edited ${suffix}`,
       description: 'Temporary hosted MCP live smoke pipeline (edited after first run)',
-      config_patch: { trigger_auto_re_sync_on_new_column: false },
+    });
+    await editPolicyWithoutSync(client, base, pipeline.id, {
+      keyless_object_handling: 'UUID',
+    });
+
+    // A settings save must not enqueue a sync. Only this explicit normal run does.
+    // Reset-token consumption needs separate database evidence; job success alone
+    // cannot establish it through the current hosted MCP response contract.
+    const policyJobId = content(await client.callTool('pipelines_sync', {
+      ...base, identifier: pipeline.id, full_resync: false, reset_target: false,
+    })).job_id;
+    activeJobs.add(policyJobId);
+    await pollJob(client, workspaceId, policyJobId, { timeoutMs: jobTimeoutMs });
+    activeJobs.delete(policyJobId);
+    await client.callTool('jobs_get', { ...base, id: policyJobId });
+    await editPolicyWithoutSync(client, base, pipeline.id, {
+      keyless_object_handling: null,
     });
 
     let cancelJobId = null;
