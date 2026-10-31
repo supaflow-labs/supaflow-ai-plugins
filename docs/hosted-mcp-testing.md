@@ -10,7 +10,7 @@ including catalog reset recovery, job polling, cancellation, and cleanup.
 These tests need no credentials, running app, database, or destination compute:
 
 ```sh
-node --test scripts/test-hosted-mcp-inspector.test.mjs scripts/test-hosted-mcp-resilience.test.mjs
+node --test scripts/test-hosted-mcp-inspector.test.mjs scripts/test-hosted-mcp-resilience.test.mjs scripts/test-hosted-mcp-keyless-policy.test.mjs
 python3 scripts/validate.py
 ```
 
@@ -116,6 +116,44 @@ uses a unique `mcp_e2e_*` destination prefix. It tests connection/catalog refres
 both pipeline creation paths, schema edits, enable/disable, catalog reset with
 selection restoration, live sync, cancellation, schedule execution/history, and
 deletion. Source data is read; existing pipelines and schedules are not edited.
+
+### Keyless policy coverage
+
+The shared lifecycle checks the keyless policy added in the app's pipeline
+configuration. Both Inspector and direct OAuth execute these checks:
+
+- `pipelines_init` and `pipelines_prepare_create` return `UUID` as the default.
+- Direct creation without a policy returns `UUID`; guided creation with
+  `ROW_HASH` returns that policy. The existing Snowflake fixture supports both.
+- Direct creation, guided creation and editing reject invalid policy values,
+  including the retired `HASH_AND_MERGE` value, lowercase `uuid`, empty strings,
+  booleans and numbers. Authentication challenges, retryable errors and transport
+  failures fail the test rather than counting as validation success. The hosted
+  service redacts generic validation errors, so these probes verify rejection,
+  not the internal reason; positive calls use the same valid fixture context.
+- Editing accepts `ROW_HASH`, an unrelated config patch, `UUID` and explicit
+  `null`. The lifecycle compares this disposable pipeline's job inventory before
+  and after each edit to check that Save does not enqueue a sync. No schedule is
+  attached to the pipeline during these assertions.
+- A normal explicit sync runs under Row hash, then another after changing to
+  Generate UUID, both with `full_resync: false` and `reset_target: false`.
+
+An unexpected successful create in a negative test is registered for the same
+`finally` cleanup before the assertion fails. Expected validation calls remain
+recorded as failed tool calls in Inspector's report; they never count as successful
+tool coverage. The corresponding rejection assertion is printed separately.
+
+These checks do **not** prove saved-value preservation after edit, unsupported
+destination rejection, reset-token consumption, or destination row/ID correctness.
+`pipelines_get` does not return saved configuration and `jobs_get` does not expose
+resolved reset flags. Create responses return the assembled configuration, not an
+independent database readback. Existing app tests cover handler persistence and
+destination-capability validation; SQL and destination tests cover reset behavior.
+Do not infer those results from a successful MCP call or terminal job status.
+Even a fully keyed fixture can exercise the configuration calls above; testing an
+actual reset also requires a selected keyless fixture and separate reset/load
+evidence. Extending the hosted response contract or adding direct database access
+to this runner is outside this change.
 
 The `finally` block cancels outstanding test jobs, waits for catalog-reset
 restoration, deletes created control-plane resources, and verifies their absence.
