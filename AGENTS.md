@@ -8,7 +8,7 @@
 - Address valid findings with focused fixes and appropriate regression coverage. For a disputed finding, record the requirement and evidence supporting its disposition before resolving it; involve the owner when the requirement is unclear. Do not repeatedly reopen a resolved decision without new evidence, change product behavior merely to quiet a reviewer, or dismiss unresolved defects to pass a gate.
 - Before merging, require successful applicable checks, resolved conversations, and completed review of the current PR head/base. New commits need fresh evidence. Do not bypass GitHub rules, forge a passing status, or substitute a review request/reaction for completed review. After merge, return to clean updated `main`, remove only this task's merged branches/worktrees, and preserve unrelated work.
 
-- The workspace `../AGENTS.md` applies when available. Ordinary changes use PRs to `main`; record package validation and applicable offline test evidence. This repository is outside the devops repositories' installed CI/Codex gate rollout; inspect live settings rather than assuming those rules exist here.
+- The workspace `../AGENTS.md` applies when available. Ordinary changes use PRs to `main`; record package validation and applicable offline test evidence. Verify the main-branch gates described below.
 - Keep hosted/local package boundaries in the PR acceptance criteria. Validate the changed package/provider surface using the existing scripts and testing runbooks. A merge does not authorize submission to a marketplace, live authenticated tests, or installation into a user's environment.
 
 ## Repository scope
@@ -42,3 +42,11 @@
 - Use `docs/hosted-mcp-testing.md` for hosted lifecycle testing through MCP Inspector or the direct OAuth client. Reuse the shared lifecycle and cleanup in `scripts/test-hosted-mcp-oauth.mjs`; do not fork provider-specific copies.
 - Run `node --test scripts/test-hosted-mcp-inspector.test.mjs scripts/test-hosted-mcp-resilience.test.mjs` when changing the Inspector adapter or shared lifecycle. Live runs require an explicitly selected account, endpoint, disposable fixtures, and mutation/destination-write opt-ins.
 - Keep Inspector OAuth storage outside the repository. Coverage reports must contain tool names and outcomes only, never credentials, fixture configuration, or raw responses.
+
+## Main branch enforcement
+
+- The main-branch protection rollout requires PRs, resolved conversations, merge commits, `PR checks` and `Codex review / main`, with no bypass actors. Verify live rule activation and successful current-head evidence before claiming enforcement.
+- `.github/workflows/pr-checks.yml` defines the offline CI coverage. These checks do not prove live credentials, deployments, or database/data correctness. No live test or publication is authorized by CI.
+- Keep the Codex connector enabled for this repository and request a fresh review when necessary. Missing or incomplete review is not a pass.
+
+- Choose the intended target branch when opening a PR. If its base branch is changed, close it and open a new PR against the intended base; the review gate rejects retargeted PRs because review summaries identify the head but not the reviewed base.
