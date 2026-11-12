@@ -1,10 +1,10 @@
-# Connect Supaflow to Cortex Code
+# Connect Supaflow to Snowflake CoCo
 
 The published plugin already includes Supaflow's registered **public OAuth client
 ID** in `.mcp.json`. Keep that value unchanged: users do not need to register an
 OAuth client or replace it with a placeholder. A public client ID identifies the
 application; it is not a client secret and grants no account access by itself.
-Browser consent, PKCE, and the account's Cortex Code permission are still required.
+Browser consent, PKCE, and the account's **Snowflake Cortex Code** permission (the current label for Snowflake CoCo) are still required.
 
 Only the multi-provider source repository's offline draft template uses
 `REPLACE_WITH_PUBLIC_CORTEX_CLIENT_ID`. That template cannot authenticate and is
@@ -19,18 +19,30 @@ not the installable release. The release builder replaces it before publication.
    and save access settings. If the application is unavailable, its server-side
    registration has not been deployed; contact support. ChatGPT, Claude, CLI,
    and native-agent grants do not grant this integration access.
-3. Load the plugin in Cortex Code. Use `/mcp` to connect the `supaflow` server and
+3. Install the plugin from the published Snowflake Labs repository:
+
+   ```sh
+   cortex plugin install https://github.com/Snowflake-Labs/coco-skills/tree/main/plugins/supaflow
+   cortex plugin list
+   cortex plugin validate supaflow
+   cortex -c <your-connection>
+   ```
+
+   For Desktop, use **Agent Settings → Plugins → + → Add from GitHub** with
+   `Snowflake-Labs/coco-skills/plugins/supaflow#main`. See the
+   [installation guide](README.md) for verification scope.
+4. In CoCo CLI, use `/mcp` to connect the `supaflow` server and
    complete browser OAuth. Review the Supaflow account, organization, requested
    permissions, and callback before authorizing. Do not paste credentials into
-   chat. Cortex Code owns token storage and refresh; the package contains no
+   chat. CoCo owns token storage and refresh; the package contains no
    client secret or bearer token.
-4. Ask: "Connect to Supaflow, show my workspaces, and let me choose one. Keep
+5. Ask: "Connect to Supaflow, show my workspaces, and let me choose one. Keep
    setup read-only." Verify `auth_status`, then `workspaces_list`, then existing
    connections in the selected workspace. A connected label alone is not proof
    of account or workspace access.
 
 The Snowflake connection selected with `cortex -c <connection>` authenticates
-Cortex Code to Snowflake. It does not authenticate Supaflow or choose a Supaflow
+CoCo to Snowflake. It does not authenticate Supaflow or choose a Supaflow
 workspace. Never forward Snowflake credentials to Supaflow.
 
 The callback normally uses `http://localhost:8585/callback`. Keep port 8585 free.
@@ -51,7 +63,7 @@ operations use a separate local Supaflow CLI workflow.
 
 ## Optional: run pipelines inside Snowflake
 
-Ask Cortex Code to use [setup-supaflow-native-app](skills/setup-supaflow-native-app/SKILL.md).
+Ask CoCo to use [setup-supaflow-native-app](skills/setup-supaflow-native-app/SKILL.md).
 This CoCo-only skill checks the selected Snowflake account and existing apps,
 then prepares installation or resumes incomplete setup. Native App SQL uses
 CoCo's built-in Snowflake connection, not Supaflow MCP. Review the target,
@@ -60,7 +72,7 @@ permissions, and compute costs before authorizing changes.
 Complete Network access and Sign in to Supaflow in the app's Snowsight
 Configuration. Browser sign-in normally deploys the native agent automatically.
 Approve that agent in Supaflow Settings > Agents, check connector readiness,
-and configure the intended workspace to use it. CoCo OAuth does not replace
+and select the intended workspace. CoCo OAuth does not replace
 Native App OAuth. Installation alone does not authorize running pipelines.
 
 If you already have a controller datasource and want it to manage the Native
@@ -76,4 +88,5 @@ and attach a customer-owned rule while preserving all existing rules. Network
 changes require approval; connection or workload tests are separately scoped.
 
 This skill is bundled for CoCo CLI. The Snowsight external MCP connector alone
-does not install the skill; web skill distribution requires separate validation.
+does not install the skill; follow the [Snowsight setup guide](https://www.supa-flow.io/docs/settings/cortex-code-snowsight)
+to upload the three skill folders.
