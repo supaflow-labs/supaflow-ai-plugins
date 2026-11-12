@@ -4,22 +4,22 @@
 
 By Supaflow, LLC · Data & Analytics
 
-Build and run data pipelines directly in Cortex Code. Move data across SaaS
+Build and run data pipelines directly in Snowflake CoCo (formerly Cortex Code). Move data across SaaS
 apps, databases, data warehouses, and data lakes. Transform data using dbt Core™
 models and sync data to your business apps with reverse ETL. Orchestrate
 pipelines, manage schedules, and troubleshoot issues—all through conversation.
 
 ## Run pipelines inside your Snowflake account
 
-Pair Cortex Code with the Supaflow Native App to run ETL pipelines inside your
+Pair Snowflake CoCo with the Supaflow Native App to run ETL pipelines inside your
 Snowflake account. The Native App's agent executes pipelines on your Snowflake
-compute using Snowpark Container Services, while Cortex Code lets you prepare,
+compute using Snowpark Container Services, while CoCo lets you prepare,
 run, schedule, and monitor them through conversation.
 
-Ask Cortex Code to install or resume setup of the Native App using the
+Ask CoCo to install or resume setup of the Native App using the
 `setup-supaflow-native-app` skill. It uses your Snowflake SQL connection and
-guides you through browser sign-in and agent approval. Configure the pipeline's
-workspace to use that agent. Connecting this plugin
+guides you through browser sign-in and agent approval. Approve the Native App agent in the intended Supaflow account and select
+your workspace. Connecting this plugin
 alone does not deploy a native agent or select where pipelines execute. The
 plugin also works with your other configured Supaflow execution environments.
 
@@ -33,11 +33,43 @@ chat. Follow the [setup guide](SETUP.md).
 
 ## Prerequisites and setup
 
-Use Cortex Code CLI with HTTP MCP OAuth support, a Supaflow account, and an
+Use Snowflake CoCo CLI with HTTP MCP OAuth support, a Supaflow account, and an
 administrator-approved **Snowflake Cortex Code** grant. Follow
-[SETUP.md](SETUP.md). No Supaflow CLI or Docker is required. This package targets
-CoCo CLI. Snowsight uses a separate external MCP connector; Desktop remains
-unverified. The plugin connects to `https://app.supa-flow.io/mcp` with browser OAuth.
+[SETUP.md](SETUP.md) for account permissions and browser OAuth.
+
+### Install in CoCo CLI
+
+Install the published plugin from Snowflake Labs:
+
+```sh
+cortex plugin install https://github.com/Snowflake-Labs/coco-skills/tree/main/plugins/supaflow
+cortex plugin list
+cortex plugin validate supaflow
+cortex -c <your-connection>
+```
+
+In the session, use `/plugin list` and `/mcp` to inspect Supaflow and connect.
+Ask: "Connect to Supaflow and show my workspaces. Keep this read-only."
+
+This installation was verified with CoCo CLI 1.1.104. Supaflow v0.1.0 appeared enabled, all three skills loaded, and hosted
+MCP `auth_status` and `workspaces_list` succeeded. Replace `<your-connection>`
+with your Snowflake connection name.
+
+### Install in CoCo Desktop
+
+Snowflake documents GitHub plugin imports in **Agent Settings → Plugins → + →
+Add from GitHub**. Enter the repository subpath:
+
+```text
+Snowflake-Labs/coco-skills/plugins/supaflow#main
+```
+
+Open the Supaflow card to check its status and components, then complete the
+Supaflow connection described in [SETUP.md](SETUP.md). The Desktop import route
+is documented by Snowflake; Supaflow's Desktop OAuth and tool calls still need
+live verification. See [Snowflake's Desktop plugin instructions](https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code-desktop/plugins#add-from-github).
+
+### Load a local package
 
 For a local checkout or extracted release package:
 
@@ -46,17 +78,16 @@ cortex plugin validate /absolute/path/to/supaflow
 cortex -c <your-connection> --plugin-dir /absolute/path/to/supaflow
 ```
 
-Use `/plugin list` and `/mcp` in the session to inspect the loaded plugin and
-connect. Do not install the whole multi-provider repository as a single plugin.
-Public marketplace installation will be documented after acceptance; no listing
-or short-name install is claimed by this candidate.
+The plugin connects to `https://app.supa-flow.io/mcp` with browser OAuth.
+For Snowsight, follow the [external MCP connector and skill setup guide](https://www.supa-flow.io/docs/settings/cortex-code-snowsight). Install the
+`plugins/supaflow` subfolder when using the Snowflake Labs repository.
 
 ## Try it
 
 - "Plan a Salesforce-to-Snowflake pipeline for Accounts and Opportunities, then ask me before creating it"
 - "Show me which pipelines failed in the last 24 hours, explain why, and recommend the next action"
 - "Run my HubSpot-to-Snowflake pipeline, monitor the job to completion, and summarize the outcome"
-- "Help me prepare a Salesforce-to-Snowflake pipeline in my workspace configured for the Supaflow Native App. Show the selected objects before creating it."
+- "Help me prepare a Salesforce-to-Snowflake pipeline in the Supaflow account where my Native App agent is approved. Show the selected objects before creating it."
 - "Help me set up the Supaflow Native App in Snowflake. Check for an existing installation first and show me the plan before making changes."
 
 The hosted skills use tools discovered from the connected MCP server; their
